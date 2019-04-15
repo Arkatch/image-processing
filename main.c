@@ -192,7 +192,7 @@ int main() {
 
   //---Segmentacja rozrost obszaru---//
   //###Piksel poczštkowy i zakres ###//
-  uint32_t _x = 0, _y = 0, _threshold = 10;
+  uint32_t _x = 467, _y = 513, _threshold = 15;
   growingregion(pixels_segment, header.biWidth, header.biHeight, _x, _y, _threshold);
   fwrite(pixels_segment, header.biSizeImage, 1, bmp_segment);
   printf("Zastosowano rozrost obszaru.\n");

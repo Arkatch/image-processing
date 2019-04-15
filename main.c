@@ -184,7 +184,7 @@ int main() {
   //---------------------------------//
   
   //--------Metoda Bernsen-----------//
-  bernsenmethod(pixels_bernsen, header.biWidth, header.biHeight, 3);
+  bernsenmethod(pixels_bernsen, header.biWidth, header.biHeight, 9);
   fwrite(pixels_bernsen, header.biSizeImage, 1, bmp_bernsen);
   printf("Zastosowano Metodę Bernsen.\n");
   printf("|----------------------------|\n");
@@ -192,7 +192,7 @@ int main() {
 
   //---Segmentacja rozrost obszaru---//
   //###Piksel poczštkowy i zakres ###//
-  uint32_t _x = 505, _y = 402, _threshold = 10;
+  uint32_t _x = 0, _y = 0, _threshold = 10;
   growingregion(pixels_segment, header.biWidth, header.biHeight, _x, _y, _threshold);
   fwrite(pixels_segment, header.biSizeImage, 1, bmp_segment);
   printf("Zastosowano rozrost obszaru.\n");

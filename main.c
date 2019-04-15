@@ -79,15 +79,15 @@ int main() {
   //--Struktury na dane i odczytywanie informacji o pliku--//
   struct BITMAPFILEINFO info;
   struct BITMAPINFOHEADER header;
-  struct RGBQUAD rgb;
+  struct RGBQUAD rgb[256]; //AF
 
   fread(&info, sizeof(info), 1, bmp);
   fread(&header, sizeof(header), 1, bmp);
-  fread(&rgb, sizeof(rgb), 1, bmp);
+  fread(rgb, sizeof(struct RGBQUAD), 256, bmp); //AF
   //---------------------------------//
 
-  //--Przewijanie pliku na początek i pobranie  całego nagłówka od początku--//
-  rewind(bmp);
+  //--Przewijanie pliku na poczštek i pobranie  całego nagłówka od poczštku--//
+  fseek(bmp, 0L,  SEEK_SET);
   uint32_t size_header = info.bfOffBits;
   uint8_t *main_header = malloc(size_header);
   fread(main_header, size_header, 1, bmp);
@@ -134,6 +134,20 @@ int main() {
   fwrite(main_header, size_header, 1, bmp_bernsen);
   //---------------------------------//
 
+  /*/--Dodawanie LUT do plików--//
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_corupted); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_sobel); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_laplacian); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_prewitt);//AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_kernel); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_min); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_max); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_filter); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_otsu); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_segment); //AF
+  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_bernsen); //AF
+  //---------------------------------/*/
+  
   //---------------------------------//
   printf("Informacje o pliku:\n");
   printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nTyp: %u\nOffbits: %u\n",
@@ -155,7 +169,7 @@ int main() {
   printf("|----------------------------|\n");
   //---------------------------------//
 
-  //-----------Prewitt operator----//
+  //-----------Prewitt operator----//tt
   edge_detection(pixels_prewit, header.biWidth, header.biHeight, PREWITT);
   fwrite(pixels_prewit, header.biSizeImage, 1, bmp_prewitt);
   printf("Zastosowano Operator Prewitt.\n");
@@ -170,14 +184,14 @@ int main() {
   //---------------------------------//
   
   //--------Metoda Bernsen-----------//
-  bernsenmethod(pixels_bernsen, header.biWidth, header.biHeight, 9);
+  bernsenmethod(pixels_bernsen, header.biWidth, header.biHeight, 3);
   fwrite(pixels_bernsen, header.biSizeImage, 1, bmp_bernsen);
   printf("Zastosowano Metodę Bernsen.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //---Segmentacja rozrost obszaru---//
-  //###Piksel początkowy i zakres ###//
+  //###Piksel poczštkowy i zakres ###//
   uint32_t _x = 505, _y = 402, _threshold = 10;
   growingregion(pixels_segment, header.biWidth, header.biHeight, _x, _y, _threshold);
   fwrite(pixels_segment, header.biSizeImage, 1, bmp_segment);
@@ -186,14 +200,10 @@ int main() {
   //---------------------------------//
 
   //----Dodaj filtr do obrazu--------//
-  int type = 0;
-  printf("|Sharpen: 1| |Box Blur: 2| |Baussian Blur: 3|: ");
-  if( scanf("%d", &type) != 1 || type < 1 || type > 3){
-    printf("1 - 3!, ustawiono na 1\n");
-    type = 1;
-  }
-  convolution_matrix(pixels_kernel, header.biWidth, header.biHeight, type);
+  convolution_matrix(pixels_kernel, header.biWidth, header.biHeight, boxblur_template);
+  printf("Zastosowano filtr wyostrzający.\n");
   fwrite(pixels_kernel, header.biSizeImage, 1, bmp_kernel);
+  printf("|----------------------------|\n");
   //---------------------------------//
 
   //----Pobieranie % zakłóceń--------//
@@ -213,7 +223,7 @@ int main() {
   //---------------------------------//
 
   //---------------------------------//
-  printf("Podaj wielkość filtra (3, 5, 7, 9...): ");
+  printf("Podaj wielkoć filtra (3, 5, 7, 9...): ");
   int filter_size = 0;
   while( scanf("%d", &filter_size) != 1 && (filter_size < 3 || filter_size%2 != 1) ){
     while( getchar()!='\n' );
@@ -223,19 +233,19 @@ int main() {
 
   //----odfiltruj szum minimum-------//
   memcpy(pixels_min, pixels_corupt, header.biSizeImage);
-  min_filter(pixels_min, header.biWidth, header.biHeight, filter_size);
+  image_filter(pixels_min, header.biWidth, header.biHeight, filter_size, min_template);
   fwrite(pixels_min, header.biSizeImage, 1, bmp_min);
   //---------------------------------//
 
   //----odfiltruj szum maksimum------//
   memcpy(pixels_max, pixels_corupt, header.biSizeImage);
-  max_filter(pixels_max, header.biWidth, header.biHeight, filter_size);
+  image_filter(pixels_max, header.biWidth, header.biHeight, filter_size, max_template);
   fwrite(pixels_max, header.biSizeImage, 1, bmp_max);
   //---------------------------------//
   
   //----odfiltruj szum medianowo-----//
   memcpy(pixels_median, pixels_corupt, header.biSizeImage);
-  median_filter(pixels_median, header.biHeight, header.biWidth, filter_size);
+  image_filter(pixels_median, header.biHeight, header.biWidth, filter_size, median_template);
   fwrite(pixels_median, header.biSizeImage, 1, bmp_filter);
   printf("Obraz został odfiltrowany filtrem o rozmiarze %dx%d\n", filter_size, filter_size);
   //---------------------------------//

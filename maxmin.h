@@ -8,10 +8,13 @@ int comp(const void * a, const void * b) {
 }
 void merge_pixels(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t mid, uint8_t *new_pixels, uint32_t size){
   uint32_t p = 0, x, y;
-  for (y = 0; y < height; ++y) {
-    for (x = 0; x < width; ++x) {
+
+  uint32_t new_height = height - mid;
+  uint32_t new_width = width - mid;
+  for (y = mid; y < new_height; ++y) {
+    for (x = mid; x < new_width; ++x) {
       if( p >= size ) return;
-      pixels[(y + mid) * width + x + mid] = new_pixels[p++];
+      pixels[y*width + x] = new_pixels[p++];
     }
   }
 }

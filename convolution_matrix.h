@@ -11,12 +11,7 @@
 #ifndef __CONVOL__
 #define __CONVOL__
 
-enum TYPE{
-  SHARPEN = 1,
-  BOXBLUR,
-  GAUSBLUR
-};
-uint8_t sharpen(int *values, int oryginal_value){
+uint8_t sharpen_template(int *values, int oryginal_value){
   int sharpen_mask[] = { 0, -1, 0, -1, 5, -1, 0, -1, 0 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
@@ -25,7 +20,7 @@ uint8_t sharpen(int *values, int oryginal_value){
     return oryginal_value;
   return bit_value;
 }
-uint8_t boxblur(int *values, int oryginal_value){
+uint8_t boxblur_template(int *values, int oryginal_value){
   int boxblur_mask[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
@@ -34,7 +29,7 @@ uint8_t boxblur(int *values, int oryginal_value){
     return oryginal_value;
   return bit_value/9;
 }
-uint8_t gaussianblur_mask(int *values, int oryginal_value){
+uint8_t gaussianblur_template(int *values, int oryginal_value){
   int gaussianblur_mask[] = { 1, 2, 1, 2, 4, 2, 1, 2, 1 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
@@ -43,34 +38,20 @@ uint8_t gaussianblur_mask(int *values, int oryginal_value){
     return oryginal_value;
   return bit_value/16;
 }
-void convolution_matrix(uint8_t * pixels, uint32_t width, uint32_t height, enum TYPE type){
-  uint32_t filter_size = 3;
-
-  int values[filter_size*filter_size];
-  uint32_t x, y, v, z, i;
-  height = height - filter_size + 1;
-  width = width - filter_size + 1;
-  int bit_value = 0;
+void convolution_matrix(uint8_t * pixels, uint32_t width, uint32_t height, uint8_t (*mask_type)(int*, int)){
   uint8_t new_pixels[width * height];
-  uint32_t size_mask = 0;
+  int32_t v, z, values[9];
+  uint32_t size_mask = 0, x, y, i;
 
-  for (y = 0; y < height; ++y) {
-    for (x = 0; x < width; ++x) {
+  uint32_t new_height = height - 1;
+  uint32_t new_width = width - 1;
+  for (y = 1; y < new_height; ++y) {
+    for (x = 1; x < new_width; ++x) {
       i = 0;
-      for (v = 0; v < filter_size; ++v)
-        for (z = 0; z < filter_size; ++z)
+      for (v = -1; v <= 1; ++v)
+        for (z = -1; z <= 1; ++z)
           values[i++] = (int)pixels[(y + v) * width + x + z];
-
-      if( type == SHARPEN ) 
-        { bit_value = sharpen(values, pixels[(y + 1) * width + x + 1]); }
-      else if( type == BOXBLUR ) 
-        { bit_value = boxblur(values, pixels[(y + 1) * width + x + 1]); }
-      else if( type == GAUSBLUR ) 
-        { bit_value = gaussianblur_mask(values, pixels[(y + 1) * width + x + 1]); }
-      else 
-        { return; }
-
-      new_pixels[size_mask++] = bit_value;
+      new_pixels[size_mask++] = mask_type(values, pixels[y*width + x]);
     }
   }
   merge_pixels(pixels, width, height, 1, new_pixels, size_mask);

@@ -10,12 +10,7 @@
 
 #ifndef __EDGE__
 #define __EDGE__
-enum METHOD{
-  PREWITT = 1,
-  SOBEL,
-  LAPLACIAN
-};
-uint8_t prewitt_template(int8_t *values){
+uint8_t prewitt_template(uint8_t *values){
   int8_t p1[] = { -1, 0, 1, -1, 0, 1, -1, 0, 1 };
   int8_t p2[] = { 0, 1, 1, -1, 0, 1, -1, -1, 0 };
   int8_t p3[] = { 1, 1, 1, 0, 0, 0, -1, -1, -1 };
@@ -42,7 +37,7 @@ uint8_t prewitt_template(int8_t *values){
   p7_v *= p7_v; p8_v *= p8_v;
   return sqrt(p1_v+p2_v+p3_v+p4_v+p5_v+p6_v+p7_v+p8_v);
 }
-uint8_t sobel_template(int8_t *values){
+uint8_t sobel_template(uint8_t *values){
   int8_t gx[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
   int8_t gy[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
   int x_value = 0, y_value = 0, i;
@@ -52,7 +47,7 @@ uint8_t sobel_template(int8_t *values){
   }
   return sqrt(x_value*x_value + y_value*y_value);
 }
-uint8_t laplacian_template(int8_t *values){
+uint8_t laplacian_template(uint8_t *values){
   int32_t v1[] = { 0, 1, 0, 1, -4, 1, 0, 1, 0 };
   int32_t v2[] = { 1, 1, 1, 1, -8, 1, 1, 1, 1 };
   int x_value = 0, y_value = 0, i;
@@ -62,28 +57,20 @@ uint8_t laplacian_template(int8_t *values){
   }
   return sqrt(x_value*x_value + y_value*y_value);
 }
-void edge_detection(uint8_t * pixels, uint32_t width, uint32_t height, enum METHOD type){
-  uint32_t x, y, v, z;
-  uint32_t filter_size = 3;
+void edge_detection(uint8_t * pixels, uint32_t width, uint32_t height, uint8_t (*detection_type)(uint8_t*)){
+  uint32_t x, y;
+  int32_t i, v, z, size_mask = 0;
+  uint8_t new_pixels[width * height], values[9];
 
-  int32_t i = 0, size_mask = 0;
-  int8_t values[9];
-  uint8_t new_pixels[width * height];
-
-  for (y = 0; y < height; ++y) {
-    for (x = 0; x < width; ++x) {
+  uint32_t new_height = height - 1; 
+  uint32_t new_width = width - 1; 
+  for (y = 1; y < new_height; ++y) {
+    for (x = 1; x < new_width; ++x) {
       i = 0;
-      for (v = 0; v < filter_size; ++v)
-        for (z = 0; z < filter_size; ++z)
+      for (v = -1; v <= 1; ++v)
+        for (z = -1; z <= 1; ++z)
           values[i++] = pixels[(y + v) * width + x + z];
-      if( type == PREWITT )
-        { new_pixels[size_mask++] = prewitt_template(values); }
-      else if( type == SOBEL )
-        { new_pixels[size_mask++] = sobel_template(values); }
-      else if( type == LAPLACIAN )
-        { new_pixels[size_mask++] = laplacian_template(values); }
-      else 
-        { return; } 
+      new_pixels[size_mask++] = detection_type(values);
     }
   }
   merge_pixels(pixels, width, height, 1, new_pixels, size_mask);

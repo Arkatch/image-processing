@@ -156,21 +156,21 @@ int main() {
   //---------------------------------//
 
   //-----------Sobel operator--------//
-  edge_detection(pixels_sobelo, header.biWidth, header.biHeight, SOBEL);
+  edge_detection(pixels_sobelo, header.biWidth, header.biHeight, sobel_template);
   fwrite(pixels_sobelo, header.biSizeImage, 1, bmp_sobel);
   printf("Zastosowano Operator Sobela.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Laplacian operator----//
-  edge_detection(pixels_laplac, header.biWidth, header.biHeight, LAPLACIAN);
+  edge_detection(pixels_laplac, header.biWidth, header.biHeight, laplacian_template);
   fwrite(pixels_laplac, header.biSizeImage, 1, bmp_laplacian);
   printf("Zastosowano Operator Laplace'a.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Prewitt operator----//tt
-  edge_detection(pixels_prewit, header.biWidth, header.biHeight, PREWITT);
+  edge_detection(pixels_prewit, header.biWidth, header.biHeight, prewitt_template);
   fwrite(pixels_prewit, header.biSizeImage, 1, bmp_prewitt);
   printf("Zastosowano Operator Prewitt.\n");
   printf("|----------------------------|\n");

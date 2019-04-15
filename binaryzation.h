@@ -52,14 +52,19 @@ void otsumethod(uint8_t *pixels, uint32_t width, uint32_t height){
   binarization(pixels, width, height, k);
 }
 void bernsenmethod(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t size){
-  uint32_t x, y, v, z, threshold, s = size*size, new_size = 0;;
-  uint8_t values[s], i = 0, _min, _max;
+  int32_t v, z, mid = size/2;
+  uint32_t x, y, threshold, i;
+  uint32_t s = size*size, new_size = 0;
+  uint8_t values[s], _min, _max;
   uint8_t new_pixels[width*height];
-  for (y = 0; y < height; ++y){
-    for (x = 0; x < width; ++x){
+    
+  uint32_t new_height = height - mid; 
+  uint32_t new_width = width - mid; 
+  for (y = mid; y < new_height; ++y) {
+    for (x = mid; x < new_width; ++x) {
       i = 0; _min = 255; _max = 0;
-      for(v = 0; v < size; ++v){
-        for(z = 0; z < size; ++z){
+      for(v = -mid; v <= mid; ++v){
+        for(z = -mid; z <= mid; ++z){
           values[i] = pixels[(y + v) * width + x + z];
           _min = min(_min, values[i]);
           _max = max(_max, values[i]);

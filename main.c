@@ -40,6 +40,11 @@ struct RGBQUAD {
   uint8_t rgbRed;
   uint8_t rgbReserved;
 };
+struct BITMAPINFO {
+  struct BITMAPFILEINFO bmiInfo;
+  struct BITMAPINFOHEADER bmiHeader;
+  struct RGBQUAD bmiColors[1];
+}; 
 #pragma pack(pop)
 
 //tablica pikseli parametr +
@@ -89,9 +94,11 @@ int main() {
   //--Przewijanie pliku na poczštek i pobranie  całego nagłówka od poczštku--//
   fseek(bmp, 0L,  SEEK_SET);
   uint32_t size_header = info.bfOffBits;
-  uint8_t *main_header = malloc(size_header);
+  int8_t *main_header = malloc(size_header);
   fread(main_header, size_header, 1, bmp);
   //---------------------------------//
+
+  printf("Pozycja pliku: %ld\n", ftell(bmp));
 
   //--Tablica [y*x] dane o wartosci poszczegolnych pikseli--//
   uint8_t *pixels_orygin = malloc( header.biSizeImage );
@@ -110,6 +117,7 @@ int main() {
 
   //--wczytywanie i kopiowanie danych--//
   fread(pixels_orygin, header.biSizeImage, 1, bmp);
+  printf("Pozycja pliku: %ld\n", ftell(bmp));
   memcpy(pixels_kernel, pixels_orygin, header.biSizeImage);
   memcpy(pixels_corupt, pixels_orygin, header.biSizeImage);
   memcpy(pixels_sobelo, pixels_orygin, header.biSizeImage);
@@ -192,7 +200,7 @@ int main() {
 
   //---Segmentacja rozrost obszaru---//
   //###Piksel poczštkowy i zakres ###//
-  uint32_t _x = 467, _y = 513, _threshold = 15;
+  uint32_t _x = 20, _y = 450, _threshold = 10;
   growingregion(pixels_segment, header.biWidth, header.biHeight, _x, _y, _threshold);
   fwrite(pixels_segment, header.biSizeImage, 1, bmp_segment);
   printf("Zastosowano rozrost obszaru.\n");

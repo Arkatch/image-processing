@@ -42,7 +42,7 @@ uint8_t avg_template(uint8_t *values, uint32_t size){
 }
 
 void image_filter(uint8_t * pixels, uint32_t width, uint32_t height, uint32_t filter_size, uint8_t (*filtr_type)(uint8_t*, uint32_t)) {
-  uint8_t values[filter_size * filter_size];
+  uint8_t values[filter_size * filter_size]; 
   uint8_t new_pixels[width*height];
   int32_t v, z, mid = filter_size / 2;
   uint32_t x, y, i, size_mask = 0;

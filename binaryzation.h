@@ -8,22 +8,66 @@
 
 #include "maxmin.h"
 
+/*/
+  uint8_t * pixels - tablica zawierająca piksele obrazu, które maja zostać edytowane
+  uint32_t width, uint32_t height - szerokość i wysokość obrazu
+  
+  void image_negative(uint8_t *pixels, uint32_t width, uint32_t height)
+      Funkcja zmienia obraz na negatyw za pomocą dopełnienia pikseli
+  
+  void binarization(uint8_t *pixels, uint32_t width, uint32_t height, uint8_t threshold)
+      Funkcja przyjmuje jako parametr wartość |uint8_t threshold|
+        wszystkie wartości >threshold są zamieniane na wartości 255 (kolor biały)
+        wszystkie wartości <=threshold są zamieniane na wartości 0 (kolor czarny)
+
+  uint8_t otsu_threshold(uint8_t *pixels, uint32_t width, uint32_t height)
+      Funkcja wylicza i zwraca threshold wyznaczony metodą Otsu
+
+  uint8_t median_threshold(uint8_t *pixels, uint32_t width, uint32_t height)
+      Funkcja wylicza i zwraca threshold wyznaczony za pomocą mediany
+
+  void bernsenmethod(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t size)
+      Metoda Bernsena binaryzuje obraz za pomocą wartości w otoczeniu piksela (parametr size określa wielkość np 3 da nam siatke 3x3)
+      
+/*/
+
 #ifndef __BIN__
 #define __BIN__
-void binarization(uint8_t *pixels, uint32_t width, uint32_t height, uint8_t threshold){
+void binarization(image_t *img, uint8_t threshold){
   uint32_t x, y;
-  for (y = 0; y < height; ++y)
-    for (x = 0; x < width; ++x)
-      pixels[y*width + x] = (pixels[y*width + x] > threshold) ? 255 : 0;
+  for (y = 0; y < img->height; ++y)
+    for (x = 0; x < img->width; ++x)
+      img->pixels[y * img->width + x] = (img->pixels[y* img->width + x] > threshold) ? 255 : 0;
 }
-uint8_t otsuthreshold(uint8_t *pixels, uint32_t width, uint32_t height){
+
+void image_negative(image_t *img){
+  uint32_t x, y, index;
+  for(y = 0; y < img->height; ++y){
+    for(x = 0; x < img->width; ++x){
+      index = y * img->width+x;
+      img->pixels[index] = 255 - img->pixels[index];
+    }
+  }
+}
+
+uint8_t median_threshold(image_t *img){
+  uint32_t x, y, i = 0;
+  uint8_t new_pixels[img->size];
+  for(y = 0; y < img->height; ++y)
+    for(x = 0; x < img->width; ++x)
+      new_pixels[i++] = img->pixels[y * img->width+x];
+  qsort(new_pixels, 1, img->size, comp);
+  return new_pixels[img->size/2];
+}
+
+uint8_t otsu_threshold(image_t *img){
   uint32_t i;
   float p[256] = {0};
   uint32_t hist[256] = {0};
   uint32_t x, y;
-  for (y = 0; y < height; ++y)
-    for (x = 0; x < width; ++x)
-      ++hist[pixels[y * width + x]];
+  for (y = 0; y < img->height; ++y)
+    for (x = 0; x < img->width; ++x)
+      ++hist[img->pixels[y * img->width + x]];
   for(i = 0; i < 256; ++i)
     p[i] = hist[i]/256.0;
 
@@ -47,35 +91,38 @@ uint8_t otsuthreshold(uint8_t *pixels, uint32_t width, uint32_t height){
   }
   return max_k;
 }
-void otsumethod(uint8_t *pixels, uint32_t width, uint32_t height){
-  uint8_t k = otsuthreshold(pixels, width, height);
-  binarization(pixels, width, height, k);
+void otsumethod(image_t *img){
+  uint8_t k = otsu_threshold(img);
+  binarization(img, k);
 }
-void bernsenmethod(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t size){
+void bernsenmethod(image_t *img, uint32_t size){
   int32_t v, z, mid = size/2;
   uint32_t x, y, threshold, i;
   uint32_t s = size*size, new_size = 0;
   uint8_t values[s], _min, _max;
-  uint8_t new_pixels[width*height];
+  uint8_t new_pixels[img->size];
     
-  uint32_t new_height = height - mid; 
-  uint32_t new_width = width - mid; 
+  uint32_t new_height = img->height - mid; 
+  uint32_t new_width = img->width - mid;
+  image_t tmp;
+
   for (y = mid; y < new_height; ++y) {
     for (x = mid; x < new_width; ++x) {
       i = 0; _min = 255; _max = 0;
       for(v = -mid; v <= mid; ++v){
         for(z = -mid; z <= mid; ++z){
-          values[i] = pixels[(y + v) * width + x + z];
+          values[i] = img->pixels[(y + v) * img->width + x + z];
           _min = min(_min, values[i]);
           _max = max(_max, values[i]);
           ++i;
         }
       }
       threshold = (_min + _max)/2;
-      binarization(values, size, size, (uint8_t)threshold);
-      new_pixels[new_size++] = values[s/2];
+      tmp = (image_t){NULL, values, 0, 0, size, size};
+      binarization(&tmp, (uint8_t)threshold);
+      new_pixels[new_size++] = tmp.pixels[s/2];
     }
   }
-  merge_pixels(pixels, width, height, size/2, new_pixels, new_size);
+  merge_pixels(img, size/2, new_pixels, new_size);
 }
 #endif

@@ -12,188 +12,119 @@
 #include "edgedetection.h"
 #include "binaryzation.h"
 #include "segmentation.h"
-
-#pragma pack(push, 1)
-struct BITMAPFILEINFO {
-  uint16_t bfType;
-  uint32_t bfSize;
-  uint16_t bfReserved1;
-  uint16_t bfReserved2;
-  uint32_t bfOffBits;
-};
-struct BITMAPINFOHEADER {
-  uint32_t biSize;
-  int32_t biWidth;
-  int32_t biHeight;
-  uint16_t biPlanes;
-  uint16_t biBitCount;
-  uint32_t biCompression;
-  uint32_t biSizeImage;
-  int32_t biXPelsPerMeter;
-  int32_t biYPelsPerMeter;
-  uint32_t biClrUsed;
-  uint32_t biClrImportant;
-};
-struct RGBQUAD {
-  uint8_t rgbBlue;
-  uint8_t rgbGreen;
-  uint8_t rgbRed;
-  uint8_t rgbReserved;
-};
-struct BITMAPINFO {
-  struct BITMAPFILEINFO bmiInfo;
-  struct BITMAPINFOHEADER bmiHeader;
-  struct RGBQUAD bmiColors[1];
-}; 
-#pragma pack(pop)
-
-//tablica pikseli parametr +
-//losowe wartosci 0 - 255 szum sól i pieprz +
-//procentowe zaburzanie +
-//odfiltrowanie obrazu filtrem medianowym +
-//filtracja splotowa (kernel image processing) +
-//image segmentation +
-//sobel operator +
+#include "clustering.h"
+#include "histogram.h"
 
 int main() {
   srand(time(NULL));
   setlocale(LC_ALL, "pl_PL.utf8");
 
-  char str[50]={0};
+  char str[50] = {0};
   printf("Podaj nazwę pliku: ");
   scanf("%49s", str);
 
-  FILE * bmp = fopen(str, "rb");
-  FILE * bmp_corupted = fopen("corupted.bmp", "wb");
-  FILE * bmp_filter = fopen("filter.bmp", "wb");
-  FILE *bmp_kernel = fopen("kernel.bmp", "wb");
-  FILE *bmp_sobel = fopen("sobel.bmp", "wb");
-  FILE *bmp_laplacian = fopen("laplacian.bmp", "wb");
-  FILE *bmp_prewitt = fopen("prewitt.bmp", "wb");
-  FILE *bmp_min = fopen("min.bmp", "wb");
-  FILE *bmp_max = fopen("max.bmp", "wb");
-  FILE *bmp_otsu = fopen("otsu.bmp", "wb");
-  FILE *bmp_segment = fopen("segment.bmp", "wb");
-  FILE *bmp_bernsen = fopen("bernsen.bmp", "wb");
+  FILE *bmp = fopen(str, "rb");
+  FILE *file;
 
-  if( bmp == NULL || bmp_corupted == NULL || bmp_filter == NULL ){
+  image_t img, img_edit, corupt;
+  load_img(&img, bmp);
+  
+  if( bmp == NULL ){
     printf("Nie można otworzyć/utworzyć plików, lub plik o danej nazwie nie istnieje!");
     return 1;
   }
-
-  //--Struktury na dane i odczytywanie informacji o pliku--//
-  struct BITMAPFILEINFO info;
-  struct BITMAPINFOHEADER header;
-  struct RGBQUAD rgb[256]; //AF
-
-  fread(&info, sizeof(info), 1, bmp);
-  fread(&header, sizeof(header), 1, bmp);
-  fread(rgb, sizeof(struct RGBQUAD), 256, bmp); //AF
-  //---------------------------------//
-
-  //--Przewijanie pliku na poczštek i pobranie  całego nagłówka od poczštku--//
-  fseek(bmp, 0L,  SEEK_SET);
-  uint32_t size_header = info.bfOffBits;
-  int8_t *main_header = malloc(size_header);
-  fread(main_header, size_header, 1, bmp);
-  //---------------------------------//
-
-  printf("Pozycja pliku: %ld\n", ftell(bmp));
-
-  //--Tablica [y*x] dane o wartosci poszczegolnych pikseli--//
-  uint8_t *pixels_orygin = malloc( header.biSizeImage );
-  uint8_t *pixels_kernel = malloc( header.biSizeImage );
-  uint8_t *pixels_corupt = malloc( header.biSizeImage );
-  uint8_t *pixels_median = malloc( header.biSizeImage );
-  uint8_t *pixels_sobelo = malloc( header.biSizeImage );
-  uint8_t *pixels_laplac = malloc( header.biSizeImage );
-  uint8_t *pixels_prewit = malloc( header.biSizeImage );
-  uint8_t *pixels_min = malloc( header.biSizeImage );
-  uint8_t *pixels_max = malloc( header.biSizeImage );
-  uint8_t *pixels_otsu = malloc( header.biSizeImage );
-  uint8_t *pixels_segment = malloc( header.biSizeImage );
-  uint8_t *pixels_bernsen = malloc( header.biSizeImage );
-  //---------------------------------//
-
-  //--wczytywanie i kopiowanie danych--//
-  fread(pixels_orygin, header.biSizeImage, 1, bmp);
-  printf("Pozycja pliku: %ld\n", ftell(bmp));
-  memcpy(pixels_kernel, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_corupt, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_sobelo, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_laplac, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_prewit, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_otsu, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_segment, pixels_orygin, header.biSizeImage);
-  memcpy(pixels_bernsen, pixels_orygin, header.biSizeImage);
-  //---------------------------------//
-
-  //--Dodawanie nagłówków do plików--//
-  fwrite(main_header, size_header, 1, bmp_corupted);
-  fwrite(main_header, size_header, 1, bmp_sobel);
-  fwrite(main_header, size_header, 1, bmp_laplacian);
-  fwrite(main_header, size_header, 1, bmp_prewitt);
-  fwrite(main_header, size_header, 1, bmp_kernel);
-  fwrite(main_header, size_header, 1, bmp_min);
-  fwrite(main_header, size_header, 1, bmp_max);
-  fwrite(main_header, size_header, 1, bmp_filter);
-  fwrite(main_header, size_header, 1, bmp_otsu);
-  fwrite(main_header, size_header, 1, bmp_segment);
-  fwrite(main_header, size_header, 1, bmp_bernsen);
-  //---------------------------------//
-
-  /*/--Dodawanie LUT do plików--//
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_corupted); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_sobel); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_laplacian); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_prewitt);//AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_kernel); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_min); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_max); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_filter); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_otsu); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_segment); //AF
-  fwrite(rgb, sizeof(struct RGBQUAD), 256, bmp_bernsen); //AF
-  //---------------------------------/*/
   
   //---------------------------------//
   printf("Informacje o pliku:\n");
-  printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nTyp: %u\nOffbits: %u\n",
-    header.biSizeImage, header.biWidth, header.biHeight, info.bfType, info.bfOffBits);
+  printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n",
+    img.size, img.width, img.height, img.head_size);
+  printf("|----------------------------|\n");
+  //---------------------------------//
+  
+  //------Tworzenie histogramu------//
+  copy_img(&img_edit, &img);
+  draw_histogram(&img_edit);
+  printf("Stworzono histogram.\n");
+  //---------------------------------//
+
+  //------Algorytm centroidów--------//
+  copy_img(&img_edit, &img);
+  means_t k[7] = {
+    {.x = 123, .y = 12, .pix = img_edit.pixels[12*img_edit.width+123]},
+    {.x = 455, .y = 470, .pix = img_edit.pixels[470*img_edit.width+455]},
+    {.x = 55, .y = 300, .pix = img_edit.pixels[55*img_edit.width+300]},
+    {.x = 184, .y = 98, .pix = img_edit.pixels[184*img_edit.width+98]},
+    {.x = 450, .y = 32, .pix = img_edit.pixels[32*img_edit.width+450]},
+    {.x = 134, .y = 199, .pix = img_edit.pixels[199*img_edit.width+134]},
+    {.x = 355, .y = 253, .pix = img_edit.pixels[253*img_edit.width+355]}
+  };
+  k_means_clustering(&img_edit, k, 7);
+  file = fopen("gen/means.bmp", "wb");
+  save_img(&img_edit, file, true);
+
+  printf("Algorytm centroidów.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
+  //--------------Negacja------------//
+  copy_img(&img_edit, &img);
+  image_negative(&img_edit);
+  file = fopen("gen/neg.bmp", "wb");
+  save_img(&img_edit, file, true);
+  printf("Negacja.\n");
+  printf("|----------------------------|\n");
+  //---------------------------------//
+  
+  //--------Poprawianie kontrastu----//
+  copy_img(&img_edit, &img);
+  contrast_stretch(&img_edit);
+  file = fopen("gen/contrast.bmp", "wb");
+  save_img(&img_edit, file, true);
+  printf("Poprawa kontrastu.\n");
+  printf("|----------------------------|\n");  
+  //---------------------------------//
+
   //-----------Sobel operator--------//
-  edge_detection(pixels_sobelo, header.biWidth, header.biHeight, sobel_template);
-  fwrite(pixels_sobelo, header.biSizeImage, 1, bmp_sobel);
+  copy_img(&img_edit, &img);
+  edge_detection(&img_edit, sobel_template);
+  file = fopen("gen/sobel.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano Operator Sobela.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Laplacian operator----//
-  edge_detection(pixels_laplac, header.biWidth, header.biHeight, laplacian_template);
-  fwrite(pixels_laplac, header.biSizeImage, 1, bmp_laplacian);
+  copy_img(&img_edit, &img);
+  edge_detection(&img_edit, laplacian_template);
+  file = fopen("gen/lap.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano Operator Laplace'a.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
-  //-----------Prewitt operator----//tt
-  edge_detection(pixels_prewit, header.biWidth, header.biHeight, prewitt_template);
-  fwrite(pixels_prewit, header.biSizeImage, 1, bmp_prewitt);
+  //-----------Prewitt operator----//
+  copy_img(&img_edit, &img);
+  edge_detection(&img_edit, prewitt_template);
+  file = fopen("gen/pre.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano Operator Prewitt.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Metoda Otsu-----------//
-  otsumethod(pixels_otsu, header.biWidth, header.biHeight);
-  fwrite(pixels_otsu, header.biSizeImage, 1, bmp_otsu);
+  copy_img(&img_edit, &img);
+  otsumethod(&img_edit);
+  file = fopen("gen/ots.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano Metodę Otsu.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
   
   //--------Metoda Bernsen-----------//
-  bernsenmethod(pixels_bernsen, header.biWidth, header.biHeight, 9);
-  fwrite(pixels_bernsen, header.biSizeImage, 1, bmp_bernsen);
+  copy_img(&img_edit, &img);
+  bernsenmethod(&img_edit, 9);
+  file = fopen("gen/ber.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano Metodę Bernsen.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
@@ -201,16 +132,20 @@ int main() {
   //---Segmentacja rozrost obszaru---//
   //###Piksel poczštkowy i zakres ###//
   uint32_t _x = 20, _y = 450, _threshold = 10;
-  growingregion(pixels_segment, header.biWidth, header.biHeight, _x, _y, _threshold);
-  fwrite(pixels_segment, header.biSizeImage, 1, bmp_segment);
+  copy_img(&img_edit, &img);
+  growingregion(&img_edit, _x, _y, _threshold);
+  file = fopen("gen/seg.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano rozrost obszaru.\n");
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //----Dodaj filtr do obrazu--------//
-  convolution_matrix(pixels_kernel, header.biWidth, header.biHeight, boxblur_template);
+  copy_img(&img_edit, &img);
+  convolution_matrix(&img_edit, boxblur_template);
+  file = fopen("gen/filter.bmp", "wb");
+  save_img(&img_edit, file, true);
   printf("Zastosowano filtr wyostrzający.\n");
-  fwrite(pixels_kernel, header.biSizeImage, 1, bmp_kernel);
   printf("|----------------------------|\n");
   //---------------------------------//
 
@@ -224,14 +159,17 @@ int main() {
   //---------------------------------//
 
   //-wypelnij szumem okreslony procent pixeli-//
-  add_salt(pixels_corupt, header.biWidth, header.biHeight, coruptproc);
-  fwrite(pixels_corupt, header.biSizeImage, 1, bmp_corupted);
+  copy_img(&corupt, &img);
+  add_salt(&corupt, coruptproc);
+  file = fopen("gen/corupt.bmp", "wb");
+  save_img(&corupt, file, false);
+  fclose(file);
   printf("%d%% obrazu zostało zakłócone.\n", coruptproc);
   printf("|----------------------------|\n");
   //---------------------------------//
 
   //---------------------------------//
-  printf("Podaj wielkoć filtra (3, 5, 7, 9...): ");
+  printf("Podaj wielkość filtra (3, 5, 7, 9...): ");
   int filter_size = 0;
   while( scanf("%d", &filter_size) != 1 && (filter_size < 3 || filter_size%2 != 1) ){
     while( getchar()!='\n' );
@@ -240,51 +178,28 @@ int main() {
   //---------------------------------//
 
   //----odfiltruj szum minimum-------//
-  memcpy(pixels_min, pixels_corupt, header.biSizeImage);
-  image_filter(pixels_min, header.biWidth, header.biHeight, filter_size, min_template);
-  fwrite(pixels_min, header.biSizeImage, 1, bmp_min);
+  copy_img(&img_edit, &corupt);
+  image_filter(&img_edit, filter_size, min_template);
+  file = fopen("gen/min.bmp", "wb");
+  save_img(&img_edit, file, true);
   //---------------------------------//
 
   //----odfiltruj szum maksimum------//
-  memcpy(pixels_max, pixels_corupt, header.biSizeImage);
-  image_filter(pixels_max, header.biWidth, header.biHeight, filter_size, max_template);
-  fwrite(pixels_max, header.biSizeImage, 1, bmp_max);
+  copy_img(&img_edit, &corupt);
+  image_filter(&img_edit, filter_size, max_template);
+  file = fopen("gen/max.bmp", "wb");
+  save_img(&img_edit, file, true);
   //---------------------------------//
   
   //----odfiltruj szum medianowo-----//
-  memcpy(pixels_median, pixels_corupt, header.biSizeImage);
-  image_filter(pixels_median, header.biHeight, header.biWidth, filter_size, median_template);
-  fwrite(pixels_median, header.biSizeImage, 1, bmp_filter);
-  printf("Obraz został odfiltrowany filtrem o rozmiarze %dx%d\n", filter_size, filter_size);
-  //---------------------------------//
+  copy_img(&img_edit, &corupt);
+  image_filter(&img_edit, filter_size, median_template);
+  file = fopen("gen/median.bmp", "wb");
+  save_img(&img_edit, file, true);
+  //---------------------------------/*/
 
   //--Zamykanie plików i zwalnianie pamięci---//
-  free(pixels_orygin);
-  free(pixels_corupt);
-  free(pixels_kernel);
-  free(pixels_median);
-  free(main_header);
-  free(pixels_sobelo);
-  free(pixels_laplac);
-  free(pixels_min);
-  free(pixels_max);
-  free(pixels_otsu);
-  free(pixels_segment);
-  free(pixels_prewit);
-  free(pixels_bernsen);
-
-  fclose(bmp);
-  fclose(bmp_otsu);
-  fclose(bmp_segment);
-  fclose(bmp_laplacian);
-  fclose(bmp_prewitt);
-  fclose(bmp_kernel);
-  fclose(bmp_corupted);
-  fclose(bmp_filter);
-  fclose(bmp_sobel);
-  fclose(bmp_bernsen);
-  fclose(bmp_min);
-  fclose(bmp_max);
+  free_img(&img);
   //---------------------------------//
   return 0;
 }

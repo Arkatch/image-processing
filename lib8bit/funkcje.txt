@@ -1,0 +1,63 @@
+maxmin.h {
+    #define max(a, b)(((a) > (b)) ? (a) : (b))
+    #define min(a, b)(((a) < (b)) ? (a) : (b))
+    int comp(const void * a, const void * b)
+    uint64_t file_size(FILE *file)
+    void free_img(image_t *img)
+    bool load_img(image_t *img, FILE *bmp)
+    bool save_img(image_t *img, FILE *bmp, bool clear_mem)
+    void merge_pixels(image_t *img, uint32_t mid, uint8_t *new_pixels, uint32_t size)
+}
+
+filter.h {
+    void add_salt(image_t *img, uint8_t proc)
+    uint8_t median_template(uint8_t *values, uint32_t size)
+    uint8_t min_template(uint8_t *values, uint32_t size)
+    uint8_t max_template(uint8_t *values, uint32_t size)    
+    uint8_t avg_template(uint8_t *values, uint32_t size)
+    void image_filter(image_t *img, uint32_t filter_size, uint8_t (*filtr_type)(uint8_t*, uint32_t)) 
+}
+
+edgedetection.h {
+    uint8_t prewitt_template(uint8_t *values)
+    uint8_t sobel_template(uint8_t *values)
+    uint8_t laplacian_template(uint8_t *values)
+    void edge_detection(image_t *img, uint8_t (*detection_type)(uint8_t*))
+}
+
+clustering.h {
+    void k_means_clustering(uint8_t *pixels, uint32_t width, uint32_t height, means_t *k, uint32_t k_size)
+}
+
+binaryzation.h {
+    void binarization(image_t *img, uint8_t threshold)
+    void image_negative(image_t *img)
+    uint8_t median_threshold(image_t *img)
+    uint8_t otsu_threshold(image_t *img)
+    void otsumethod(image_t *img)
+    void bernsenmethod(image_t *img, uint32_t size)
+}
+
+convolution_matrix.h {
+    uint8_t sharpen_template(int *values, int oryginal_value)
+    uint8_t boxblur_template(int *values, int oryginal_value)
+    uint8_t gaussianblur_template(int *values, int oryginal_value)
+    void convolution_matrix(image_t *img, uint8_t (*mask_type)(int*, int))
+}
+
+histogram.h {
+    uint32_t *pixels_histogram(image_t *img)
+    uint32_t draw_histogram(image_t *img)
+    void contrast_stretch(image_t *img)
+}
+
+queue.h {
+    void queue_start(queue *ptr)
+    bool is_empty_queue(queue *ptr)
+    void enqueue(queue *ptr, int32_t x, int32_t y)
+    bool dequeue(queue *ptr, int32_t *x, int32_t *y)
+}
+segmentation.h {
+    void growingregion(image_t *img, int32_t px, int32_t py, int16_t threshold)
+    void growingregion_queue(image_t *img, int32_t px, int32_t py, int16_t t_min, int16_t t_max, uint8_t *new_pixels)
+}

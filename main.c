@@ -6,14 +6,9 @@
 #include <time.h>
 #include <locale.h>
 
-#include "maxmin.h"
-#include "convolution_matrix.h"
-#include "filter.h"
-#include "edgedetection.h"
-#include "binaryzation.h"
-#include "segmentation.h"
-#include "clustering.h"
-#include "histogram.h"
+#include "lib8bit/bmp8gray.h"
+#include "lib24bit/bmp24rgb.h"
+
 
 int main() {
   srand(time(NULL));
@@ -25,22 +20,20 @@ int main() {
 
   FILE *bmp = fopen(str, "rb");
   FILE *file;
-
-  image_t img, img_edit, corupt;
-  load_img(&img, bmp);
-  
   if( bmp == NULL ){
     printf("Nie można otworzyć/utworzyć plików, lub plik o danej nazwie nie istnieje!");
     return 1;
   }
-  
-  //---------------------------------//
+
+  image_t img, img_edit, corupt;
+  load_img(&img, bmp);
+  //-------Informacje o pliku--------//
   printf("Informacje o pliku:\n");
-  printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n",
+  printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n ",
     img.size, img.width, img.height, img.head_size);
   printf("|----------------------------|\n");
   //---------------------------------//
-  
+
   //------Tworzenie histogramu------//
   copy_img(&img_edit, &img);
   draw_histogram(&img_edit);
@@ -61,7 +54,6 @@ int main() {
   k_means_clustering(&img_edit, k, 7);
   file = fopen("gen/means.bmp", "wb");
   save_img(&img_edit, file, true);
-
   printf("Algorytm centroidów.\n");
   printf("|----------------------------|\n");
   //---------------------------------//

@@ -6,5 +6,6 @@
 #include "clustering24bit.h"
 #include "convert.h"
 #include "filter24.h"
+#include "edgedetection24.h"
 
 #endif

@@ -95,4 +95,31 @@ void convert_to_rgb(image_t *dest, imagehsi_t *src){
   }
 }
 
+
+//---------------Zapisywanie i kopiowanie HSI-----------------//
+void save_hsi(imagehsi_t *hsi, FILE *bmp, bool clear_mem){
+  image_t img;
+  convert_to_rgb(&img, hsi);
+  fwrite(img.header, img.head_size, 1, bmp);
+  fwrite(img.pixels, img.size, 1, bmp);
+
+  if( clear_mem ){ 
+    free_img(&img);
+    free_hsi(hsi);
+    fclose(bmp);
+  }
+}
+void copy_hsi(imagehsi_t *dest, imagehsi_t *src){
+  *dest = (imagehsi_t){
+    (uint8_t*)malloc(src->head_size),
+    (double*)malloc(src->size * sizeof(double)),
+    src->head_size, 
+    src->size,
+    src->width,
+    src->height
+  };
+  memcpy(dest->header, src->header, src->head_size);
+  memcpy(dest->pixels, src->pixels, src->size * sizeof(double));
+}
+//----------------------------------------------------------//
 #endif

@@ -49,25 +49,20 @@ void image_filter24(imagehsi_t *img, uint32_t filter_size, double (*filtr_type)(
   double values[filter_size * filter_size]; 
   double *new_pixels = (double*)malloc(img->size * sizeof(double));
   int32_t i, j, mid = (filter_size / 2) * 3;
-  uint32_t x, y, s, size_mask = 0, index = 0;
-  
+  uint32_t x, y, s, size_mask = 0;
   uint32_t new_height = (img->height - mid) * 3;
   uint32_t new_width = (img->width - mid) * 3;
-
+  
   for (y = mid; y < new_height; y += 3) {
     for (x = mid; x < new_width; x += 3) {
       s = 0;
       for (i = -mid; i <= mid; i += 3)
-        for (j = -mid; j <= mid; j += 3){ 
-          index = (y + i) * (img->width) + x + j;
-          values[s++] = img->pixels[index]; 
-        }
+        for (j = -mid; j <= mid; j += 3)
+          { values[s++] = img->pixels[(y + i) * (img->width) + x + j]; }
       new_pixels[size_mask++] = filtr_type(values, s);
     }
   }
   merge_pixels24(img, mid, new_pixels, size_mask);
   free(new_pixels);
 }
-
-
 #endif

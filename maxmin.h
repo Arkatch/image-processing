@@ -130,8 +130,7 @@ typedef struct means_t{
 }means_t;
 //-------------------------------//
 
-//---------------------------Funkcje---------------------------//
-
+//----------------------------------------------------Funkcje-----------------------------------------------------//
 //qsort
 int comp(const void * a, const void * b) {
   return (int16_t)(*(uint8_t*)a) - (int16_t)(*(uint8_t*)b);
@@ -146,8 +145,7 @@ uint64_t file_size(FILE *file){
   return size;
 }
 
-//--Wczytywanie, zapisywanie, kopiowanie pliku BMP--//
-
+//-------------------------Wczytywanie, zapisywanie, kopiowanie pliku BMP-----------------------------//
 //zwalnianie pamięci pliku bmp
 void free_img(image_t *img){
   if( img->header != NULL )
@@ -164,9 +162,7 @@ void free_hsi(imagehsi_t *img){
 
 //image_t *img - struktura do której ma zostać zapisany obraz, 
 //FILE *bmp - plik z którego ma zostać wczytany obraz, plik jest zamykany po pobraniu danych
-bool load_img(image_t *img, FILE *bmp){
-  if( bmp == NULL || img == NULL)
-    { return false; }
+void load_img(image_t *img, FILE *bmp){
   infomin_t info;
   header_t headermin;
   fread(&info, sizeof(infomin_t), 1, bmp);
@@ -186,15 +182,11 @@ bool load_img(image_t *img, FILE *bmp){
   fread(img->header, img->head_size, 1, bmp);
   fread(img->pixels, img->size, 1, bmp);
   fclose(bmp);
-  return true;
 }
 //bool clear_mem:
 //true - jeśli pamięć obrazu ma być zwolniona, a plik zamknięty
 //false - w przeciwnym przypadku
-bool save_img(image_t *img, FILE *bmp, bool clear_mem){
-  if( bmp == NULL || img == NULL )
-    { return false; }
-  
+void save_img(image_t *img, FILE *bmp, bool clear_mem){
   fwrite(img->header, img->head_size, 1, bmp);
   fwrite(img->pixels, img->size, 1, bmp);
 
@@ -202,14 +194,8 @@ bool save_img(image_t *img, FILE *bmp, bool clear_mem){
     free_img(img);
     fclose(bmp);
   }
-  return true;
 }
-bool copy_img(image_t *dest, image_t *src){
-  if( dest == NULL || src == NULL ||
-      src->pixels == NULL ||
-      src->header == NULL
-  ) { return false; }
-
+void copy_img(image_t *dest, image_t *src){
   *dest = (image_t){
     (uint8_t*)malloc(src->head_size),
     (uint8_t*)malloc(src->size),
@@ -220,7 +206,6 @@ bool copy_img(image_t *dest, image_t *src){
   };
   memcpy(dest->header, src->header, src->head_size);
   memcpy(dest->pixels, src->pixels, src->size);
-  return true;
 }
 //----------------------------------------//
 

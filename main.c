@@ -5,7 +5,9 @@
 #include <math.h>
 #include <time.h>
 #include <locale.h>
+#include <stdbool.h>
 
+#include "maxmin.h"
 #include "lib8bit/bmp8gray.h"
 #include "lib24bit/bmp24rgb.h"
 
@@ -14,48 +16,191 @@ int main() {
   srand(time(NULL));
   setlocale(LC_ALL, "pl_PL.utf8");
 
-  char str[50] = {0};
-  printf("Podaj nazwę pliku: ");
-  scanf("%49s", str);
+  //------------------------//
+  char strrgb[50] = {0};
+  char strgray[50] = {0};
+  printf("Podaj nazwę pliku RGB: ");
+  scanf("%49s", strrgb);
+  while(getchar()!='\n');
+  
+  printf("Podaj nazwę pliku GRAY: ");
+  scanf("%49s", strgray);
+  while(getchar()!='\n');
 
-  FILE *bmp = fopen(str, "rb");
-  FILE *file;
+  FILE *bmp = fopen(strrgb, "rb");
+  FILE *bmp_gray = fopen(strgray, "rb");
   if( bmp == NULL ){
     printf("Nie można otworzyć/utworzyć plików, lub plik o danej nazwie nie istnieje!");
     return 1;
   }
+  //------------------------/*/
 
-  image_t img, img_edit, corupt;
+  //--------Deklaracje-------//
+  FILE *file;
+  imagehsi_t hsi, hsi_corrupt, hsi_edit;
+  image_t img, img_edit, new_img, corupt;
   load_img(&img, bmp);
+  //------------------------/*/
+
   //-------Informacje o pliku--------//
-  printf("Informacje o pliku:\n");
+  printf("Informacje o pliku RGB:\n");
   printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n ",
     img.size, img.width, img.height, img.head_size);
   printf("|----------------------------|\n");
-  //---------------------------------//
+  //---------------------------------/*/
 
-  //------Tworzenie histogramu------//
+  //-----------------------HSI 24 bit BMP---------------------------//
+  //---------Szum RGB(HSI)---------------//
+  file = fopen("gen24/corrupt.bmp", "wb");  
+  convert_to_hsi(&hsi, &img);   //#####przejście w tryb HSI#####
+  add_salt24(&hsi, 15);         //dodawanie 15% szumu do obrazu
+  copy_hsi(&hsi_corrupt, &hsi); //skopiowanie obrazu do nowej struktury
+  save_hsi(&hsi, file, true);   //zapisanie obrazu, zamkniecie pliku i wyczyszczenie pamięci gdy parametr 3 == true
+  //gdyby kończyć tu działanie programu, to trzeba wyczyścić jeszcze hsi free_hsi(&hsi)
+  //-------------------------------------//
+
+  //--------Filtrowanie medianowo--------//
+  file = fopen("gen24/median.bmp", "wb");
+  copy_hsi(&hsi, &hsi_corrupt);
+  image_filter24(&hsi, 3, median_template24);
+  save_hsi(&hsi, file, true);  
+  //-------------------------------------//
+
+  //--------Filtrowanie minimum----------//
+  file = fopen("gen24/min.bmp", "wb");
+  copy_hsi(&hsi, &hsi_corrupt);
+  image_filter24(&hsi, 3, min_template24);
+  save_hsi(&hsi, file, true);
+  //-------------------------------------//
+
+  //--------Filtrowanie maksimum---------//
+  file = fopen("gen24/max.bmp", "wb");
+  copy_hsi(&hsi, &hsi_corrupt);
+  image_filter24(&hsi, 3, max_template24);
+  save_hsi(&hsi, file, true);
+  //-------------------------------------//
+
+  //--------Filtrowanie średnia----------//
+  file = fopen("gen24/avg.bmp", "wb");
+  copy_hsi(&hsi, &hsi_corrupt);
+  image_filter24(&hsi, 3, avg_template24);
+  save_hsi(&hsi, file, true);
+  //-------------------------------------//
+
+  free_hsi(&hsi_corrupt); //zwalnianie pamięci
+  convert_to_hsi(&hsi, &img); //do zwolnienia
+
+  //--------Wykrywanie krawędzi (zapisywanie w RGB)----------//
+  file = fopen("gen24/sobelRGB.bmp", "wb");
+  copy_hsi(&hsi_edit, &hsi);
+  edge_detection24(&hsi_edit, sobel_template24);
+  save_hsi(&hsi_edit, file, true);
+  //-------------------------------------//
+
+  //--------Wykrywanie krawędzi (zapisywanie w GRAY)----------//
+  //Trzeba wykonać trochę więcej operacji
+  file = fopen("gen24/sobelGRAY.bmp", "wb");      //Plik do zapisania obrazu
+  copy_hsi(&hsi_edit, &hsi);                      //Skopiowanie oryginalnego obrazu do nowej struktury
+  edge_detection24(&hsi_edit, sobel_template24);  //Wykrywanie krawędzi
+  convert_to_rgb(&img_edit, &hsi_edit);           //Konwersja do RGB
+  rgb_to_gray(&img_edit, &new_img);               //Konwersja do GRAY
+  save_img(&new_img, file, true);                 //Zapisanie obrazu
+  free_img(&img_edit); free_hsi(&hsi_edit);       //Zwolnienie pamięci
+  //-------------------------------------//
+  //----------------------------------------------------------------/*/
+
+  //-----------------------RGB 24 bit BMP---------------------------//
+  //------Algorytm centroidów RGB--------//
+  file = fopen("gen24/clust.bmp", "wb");
   copy_img(&img_edit, &img);
-  draw_histogram(&img_edit);
-  printf("Stworzono histogram.\n");
-  //---------------------------------//
+  meansrgb_t kr[10] = {
+    get_pixel_info24(&img_edit, 55, 180),
+    get_pixel_info24(&img_edit, 600, 180),
+    get_pixel_info24(&img_edit, 444, 222),
+    get_pixel_info24(&img_edit, 1, 8),
+    get_pixel_info24(&img_edit, 288, 355),
+    get_pixel_info24(&img_edit, 22, 355),
+    get_pixel_info24(&img_edit, 288, 22),
+    get_pixel_info24(&img_edit, 586, 222),
+    get_pixel_info24(&img_edit, 586, 200)
+  };
+  k_means24_clustering(&img_edit, kr, 10);
+  save_img(&img_edit, file, true);
+  //-------------------------------------//
+
+  //-------------Do szarosci-------------//
+  file = fopen("gen24/avggray.bmp", "wb");
+  copy_img(&img_edit, &img);
+  rgb_to_gray(&img_edit, &new_img);
+  save_img(&new_img, file, true);
+  //-------------------------------------//
+
+  //-----------Szary po kolorach---------//
+  //Czerwony
+  file = fopen("gen24/byred.bmp", "wb");
+  copy_img(&img_edit, &img);
+  gray_by_color(&img_edit, &new_img, RED);
+  save_img(&new_img, file, true);
+
+  //Zielony
+  file = fopen("gen24/bygreen.bmp", "wb");
+  copy_img(&img_edit, &img);
+  gray_by_color(&img_edit, &new_img, GREEN);
+  save_img(&new_img, file, true);
+
+  //Niebieski
+  file = fopen("gen24/byblue.bmp", "wb");
+  copy_img(&img_edit, &img);
+  gray_by_color(&img_edit, &new_img, BLUE);
+  save_img(&new_img, file, true);
+  //-------------------------------------//
+
+  //-----------Jeden kolor---------------//
+  //Czerwony
+  file = fopen("gen24/filred.bmp", "wb");
+  copy_img(&img_edit, &img);
+  color_mask(&img_edit, red_mask);
+  save_img(&img_edit, file, true);
+  //Zielony
+  file = fopen("gen24/filgreen.bmp", "wb");
+  copy_img(&img_edit, &img);
+  color_mask(&img_edit, green_mask);
+  save_img(&img_edit, file, true);
+  //Niebieski
+  file = fopen("gen24/filblue.bmp", "wb");
+  copy_img(&img_edit, &img);
+  color_mask(&img_edit, blue_mask);
+  save_img(&img_edit, file, true);
+  //-------------------------------------//
+  //----------------------------------------------------------------/*/
+
+  //-----------------------GRAY 8 bit BMP---------------------------//
+  //------Otwieranie pliku 8 bitowego---------//
+  free_img(&img);
+  load_img(&img, bmp_gray);
+  //------------------------------------------//
+  
+  //-------Informacje o pliku--------//
+  printf("Informacje o pliku GRAY:\n");
+  printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n ",
+    img.size, img.width, img.height, img.head_size);
+  printf("|----------------------------|\n");
+  //---------------------------------/*/
 
   //------Algorytm centroidów--------//
   copy_img(&img_edit, &img);
   means_t k[7] = {
-    {.x = 123, .y = 12, .pix = img_edit.pixels[12*img_edit.width+123]},
-    {.x = 455, .y = 470, .pix = img_edit.pixels[470*img_edit.width+455]},
-    {.x = 55, .y = 300, .pix = img_edit.pixels[55*img_edit.width+300]},
-    {.x = 184, .y = 98, .pix = img_edit.pixels[184*img_edit.width+98]},
-    {.x = 450, .y = 32, .pix = img_edit.pixels[32*img_edit.width+450]},
-    {.x = 134, .y = 199, .pix = img_edit.pixels[199*img_edit.width+134]},
-    {.x = 355, .y = 253, .pix = img_edit.pixels[253*img_edit.width+355]}
+    get_pixel_info(&img, 12, 27),
+    get_pixel_info(&img, 455, 470),
+    get_pixel_info(&img, 55, 300),
+    get_pixel_info(&img, 184, 98),
+    get_pixel_info(&img, 450, 32),
+    get_pixel_info(&img, 134, 199),
+    get_pixel_info(&img, 355, 254)
   };
   k_means_clustering(&img_edit, k, 7);
   file = fopen("gen/means.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Algorytm centroidów.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //--------------Negacja------------//
@@ -63,8 +208,6 @@ int main() {
   image_negative(&img_edit);
   file = fopen("gen/neg.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Negacja.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
   
   //--------Poprawianie kontrastu----//
@@ -72,8 +215,6 @@ int main() {
   contrast_stretch(&img_edit);
   file = fopen("gen/contrast.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Poprawa kontrastu.\n");
-  printf("|----------------------------|\n");  
   //---------------------------------//
 
   //-----------Sobel operator--------//
@@ -81,8 +222,6 @@ int main() {
   edge_detection(&img_edit, sobel_template);
   file = fopen("gen/sobel.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano Operator Sobela.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Laplacian operator----//
@@ -90,8 +229,6 @@ int main() {
   edge_detection(&img_edit, laplacian_template);
   file = fopen("gen/lap.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano Operator Laplace'a.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Prewitt operator----//
@@ -99,8 +236,6 @@ int main() {
   edge_detection(&img_edit, prewitt_template);
   file = fopen("gen/pre.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano Operator Prewitt.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //-----------Metoda Otsu-----------//
@@ -108,17 +243,13 @@ int main() {
   otsumethod(&img_edit);
   file = fopen("gen/ots.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano Metodę Otsu.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
   
   //--------Metoda Bernsen-----------//
   copy_img(&img_edit, &img);
-  bernsenmethod(&img_edit, 9);
+  bernsenmethod(&img_edit, 5);
   file = fopen("gen/ber.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano Metodę Bernsen.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //---Segmentacja rozrost obszaru---//
@@ -128,8 +259,6 @@ int main() {
   growingregion(&img_edit, _x, _y, _threshold);
   file = fopen("gen/seg.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano rozrost obszaru.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
   //----Dodaj filtr do obrazu--------//
@@ -137,18 +266,10 @@ int main() {
   convolution_matrix(&img_edit, boxblur_template);
   file = fopen("gen/filter.bmp", "wb");
   save_img(&img_edit, file, true);
-  printf("Zastosowano filtr wyostrzający.\n");
-  printf("|----------------------------|\n");
   //---------------------------------//
 
-  //----Pobieranie % zakłóceń--------//
-  printf("Podaj procent zakłóceń (0 - 100): ");
-  int coruptproc = 0;
-  while( scanf("%d", &coruptproc) != 1 && (coruptproc < 0 || coruptproc > 100) ){
-    while( getchar()!='\n' );
-    printf("Zakres od 0 - 100: ");
-  }
-  //---------------------------------//
+  //procent uszkodzenia
+  uint8_t coruptproc = 10;
 
   //-wypelnij szumem okreslony procent pixeli-//
   copy_img(&corupt, &img);
@@ -160,14 +281,8 @@ int main() {
   printf("|----------------------------|\n");
   //---------------------------------//
 
-  //---------------------------------//
-  printf("Podaj wielkość filtra (3, 5, 7, 9...): ");
-  int filter_size = 0;
-  while( scanf("%d", &filter_size) != 1 && (filter_size < 3 || filter_size%2 != 1) ){
-    while( getchar()!='\n' );
-    printf("Podaj wielkość filtra (3, 5, 7, 9...): ");
-  }
-  //---------------------------------//
+  //Wielkość filtra
+  int filter_size = 3;
 
   //----odfiltruj szum minimum-------//
   copy_img(&img_edit, &corupt);
@@ -188,10 +303,18 @@ int main() {
   image_filter(&img_edit, filter_size, median_template);
   file = fopen("gen/median.bmp", "wb");
   save_img(&img_edit, file, true);
-  //---------------------------------/*/
+  //---------------------------------//
+
+  //------Tworzenie histogramu------//
+  copy_img(&img_edit, &img);
+  draw_histogram(&img_edit, "gen/bmpgrayhist.bmp");
+  printf("Stworzono histogram.\n");
+  //---------------------------------//
+
+  //----------------------------------------------------------------/*/
 
   //--Zamykanie plików i zwalnianie pamięci---//
   free_img(&img);
-  //---------------------------------//
+  //---------------------------------/*/
   return 0;
 }

@@ -41,7 +41,7 @@ void rgb_to_gray(image_t *img, image_t *new_img){
   /*/Przygotowanie pustego pliku/*/
   convert_gray_mem(new_img, img);
   for(x = 0; x < img->size; x+=3){
-    avg = (img->pixels[x] + img->pixels[x+1] + img->pixels[x+2])/3;
+    avg = (uint32_t)(img->pixels[x] + img->pixels[x+1] + img->pixels[x+2])/3;
     new_img->pixels[p++] = avg;
   }
 }
@@ -51,7 +51,12 @@ void gray_by_color(image_t *img, image_t *new_img, enum COLOR color){
   convert_gray_mem(new_img, img);
   for(x = 0; x < img->size; x+=3)
     { new_img->pixels[p++] = img->pixels[x + color]; }
-  draw_histogram(new_img);
+  switch ( color )
+  {
+    case RED: draw_histogram(new_img, "gen24/redhistogram.bmp"); break;
+    case GREEN: draw_histogram(new_img, "gen24/greenhistogram.bmp"); break;
+    case BLUE: draw_histogram(new_img, "gen24/bluehistogram.bmp"); break;
+  }
 }
 /********************************************/
 

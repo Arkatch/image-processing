@@ -62,7 +62,8 @@ void image_filter(image_t *img, uint32_t filter_size, uint8_t (*filtr_type)(uint
   uint32_t new_width = img->width - mid;
 
   for (y = mid; y < new_height; ++y) {
-    for (x = mid, i = 0; x < new_width; ++x) {
+    for (x = mid; x < new_width; ++x) {
+      i = 0;
       for (v = -mid; v <= mid; ++v)
         for (z = -mid; z <= mid; ++z)
           values[i++] = img->pixels[(y + v) * (img->width) + x + z];

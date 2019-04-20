@@ -10,17 +10,11 @@
 #ifndef __HISTOGRAM__
 #define __HISTOGRAM__
 
-uint32_t *pixels_histogram(image_t *img){
-  static uint32_t hist[256] = {0};
-  uint32_t x, y;
-  for(y = 0; y < img->height; ++y)
-    for(x = 0; x < img->width; ++x)
-      ++hist[img->pixels[y * (img->height) + x]];
-  return hist;
-}
-uint32_t draw_histogram(image_t *img){
-  FILE *histogram = fopen("gen/histogram.bmp", "wb");
+uint32_t draw_histogram(image_t *img, const char *filename){
+  FILE *histogram = fopen(filename, "wb");
   FILE *hist_template = fopen("template.bin", "rb"); /*dane nagłówka/*/
+  if( histogram == NULL || hist_template == NULL )
+    { return 1; }
   
   if( histogram == NULL ) { return 1; }
   if( hist_template == NULL ) { return 2; }
@@ -29,17 +23,23 @@ uint32_t draw_histogram(image_t *img){
   load_img(&img_hist, hist_template);
 
   uint32_t i, y;
-  uint32_t *hist = pixels_histogram(img), _max = 0, param = 1;
+  uint32_t hist[256] = {0}, _max = 0, param = 1;
+
+  //Obliczanie ilości pikseli w każdym odcieniu
+  for(i = 0; i < img->size; ++i)
+    ++hist[img->pixels[i]];
+
+  //Wyszukiwanie wartości największej
   for(i = 0; i < 256; ++i)
     _max = max(_max, hist[i]);
+  //wyszukiwanie największego dzielnika, aby wykres zmieścił się w obrazie
   while( _max/param > 160 ) ++param;
   
   for(i = 0; i < 256; ++i) {
     for(y = 65+(hist[i] / param); y > 65 ; --y)
       img_hist.pixels[y * (img_hist.width) +(32+i)] = 0;
   }
-  
-  save_img(&img_hist, histogram, 1);
+  save_img(&img_hist, histogram, true);
   fclose(hist_template);
   return 0;
 }

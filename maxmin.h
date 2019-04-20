@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
+#include <locale.h>
 #include <stdbool.h>
 
 /*/
@@ -27,8 +29,14 @@
 #define __FUNCTIONS__
 #define max(a, b)(((a) > (b)) ? (a) : (b))
 #define min(a, b)(((a) < (b)) ? (a) : (b))
+#define PI 3.14159265 
+#define PI2 6.283185307   /* 2PI */
+#define PI2_3 2.094395102 /* 2PI/3*/
+#define PI4_3 4.188790205 /* 4PI/3*/
+#define PI_3 1.047197551  /* PI/3*/
 
 
+//-------Nagłówek pliku bmp--------//
 #pragma pack(push, 1)
 typedef struct BITMAPFILEINFO {
   uint16_t bfType;
@@ -55,25 +63,80 @@ typedef struct RGBQUAD {
   uint8_t rgbGreen;
   uint8_t rgbRed;
   uint8_t rgbReserved;
-}rgb_t;
+}rgbquad_t;
 #pragma pack(pop)
-
 typedef struct fullhead_t{
   infomin_t info;
   header_t head;
-  rgb_t rgb[256];
+  rgbquad_t rgb[256];
 }fullhead_t;
+//-------------------------------//
 
+
+//!!!!---Główna struktura pliku BMP-----!!!!//
+//RGB/GRAY
 typedef struct image_t{
   uint8_t *header;
   uint8_t *pixels;
   uint32_t head_size, size;
   int32_t width, height;
 }image_t;
+//HSI - convert.h - filter24.h
+typedef struct imagehsi_t{
+  uint8_t *header;
+  double *pixels;
+  uint32_t head_size, size;
+  int32_t width, height;
+}imagehsi_t;
+//------------------------------------------//
 
+//-------------rgbtogray.h------------------//
+enum COLOR{
+  BLUE,
+  GREEN, 
+  RED
+};
+// r,g,b ∈[0,255]
+typedef struct rgb_t{
+  uint8_t r, g, b;
+}rgb_t;
+// h∈[0,2PI], s∈[0,1], i∈[0,1]
+typedef struct hsi_t{
+  double h, s, i;
+}hsi_t;
+//------------------------------------------//
+
+//---------Klasteryzacja 24 bitowa--------//
+typedef struct pointrgb_t{
+  int32_t r, g, b;
+  int32_t index, distance;
+  uint32_t pos;
+}pointrgb_t;
+typedef struct meansrgb_t{
+  int32_t r, g, b;
+  uint32_t x, y;
+}meansrgb_t;
+//-------------------------------//
+
+//---------Klasteryzacja 8 bitowa--------//
+typedef struct point_t{
+  int16_t pix;
+  int32_t index, distance;
+  uint32_t pos;
+}point_t;
+typedef struct means_t{
+  int16_t pix;
+  uint32_t x, y;
+}means_t;
+//-------------------------------//
+
+//---------------------------Funkcje---------------------------//
+
+//qsort
 int comp(const void * a, const void * b) {
   return (int16_t)(*(uint8_t*)a) - (int16_t)(*(uint8_t*)b);
 }
+
 uint64_t file_size(FILE *file){
   if( file == NULL )
     { return 0; }
@@ -82,14 +145,25 @@ uint64_t file_size(FILE *file){
   rewind(file);
   return size;
 }
+
+//--Wczytywanie, zapisywanie, kopiowanie pliku BMP--//
+
+//zwalnianie pamięci pliku bmp
 void free_img(image_t *img){
-  if( img == NULL ) { return; }
+  if( img->header != NULL )
+    { free(img->header); }
+  if( img->pixels != NULL )
+    { free(img->pixels); }
+}
+void free_hsi(imagehsi_t *img){
   if( img->header != NULL )
     { free(img->header); }
   if( img->pixels != NULL )
     { free(img->pixels); }
 }
 
+//image_t *img - struktura do której ma zostać zapisany obraz, 
+//FILE *bmp - plik z którego ma zostać wczytany obraz, plik jest zamykany po pobraniu danych
 bool load_img(image_t *img, FILE *bmp){
   if( bmp == NULL || img == NULL)
     { return false; }
@@ -114,6 +188,9 @@ bool load_img(image_t *img, FILE *bmp){
   fclose(bmp);
   return true;
 }
+//bool clear_mem:
+//true - jeśli pamięć obrazu ma być zwolniona, a plik zamknięty
+//false - w przeciwnym przypadku
 bool save_img(image_t *img, FILE *bmp, bool clear_mem){
   if( bmp == NULL || img == NULL )
     { return false; }
@@ -145,11 +222,16 @@ bool copy_img(image_t *dest, image_t *src){
   memcpy(dest->pixels, src->pixels, src->size);
   return true;
 }
+//----------------------------------------//
 
+//-------------------Scalanie pikseli nowej------------------//
 
+//Scalanie pikseli w obrazach 8-bitowych,
+//uint32_t mid - wielkość filtra podzielona przez 2, 
+//uint8_t *new_pixels - tablica nowych pikseli, 
+//uint32_t size - wielkość tablicy nowych pikseli
 void merge_pixels(image_t *img, uint32_t mid, uint8_t *new_pixels, uint32_t size){
   uint32_t p = 0, x, y;
-
   uint32_t new_height = img->height - mid;
   uint32_t new_width = img->width - mid;
   for (y = mid; y < new_height; ++y) {
@@ -159,4 +241,18 @@ void merge_pixels(image_t *img, uint32_t mid, uint8_t *new_pixels, uint32_t size
     }
   }
 }
+//Scalanie pikseli w obrazach HSI 24-bitowych
+//uint32_t mid - (wielokść_filtra / 2) * 3
+void merge_pixels24(imagehsi_t *img, uint32_t mid, double *new_pixels, uint32_t size){
+  uint32_t p = 0, x, y;
+  uint32_t new_height = (img->height - mid) * 3;
+  uint32_t new_width = (img->width - mid) * 3;
+  for (y = mid; y < new_height; y += 3) {
+    for (x = mid; x < new_width; x += 3) {
+      if( p >= size ) return;
+      img->pixels[y*img->width + x] = new_pixels[p++];
+    }
+  }
+}
+//-------------------------------------------------------------//
 #endif

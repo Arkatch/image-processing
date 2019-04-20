@@ -1,17 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <math.h>
-#include <time.h>
-#include <locale.h>
-#include <stdbool.h>
-
 #include "queue.h"
 #include "../maxmin.h"
 
 /*/
-
   void growingregion(image_t *img, int32_t px, int32_t py, int16_t threshold)
   int32_t px i int32_t py - piksel od którego startujemy, od niego też zależy jakie wartości będą kolejno przyłączane 
   int16_t threshold - zakres który mówi jakie piksele mamy mamy dołączać

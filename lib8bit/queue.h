@@ -48,20 +48,3 @@ bool dequeue(queue *ptr, int32_t *x, int32_t *y){
     return true;
 }
 #endif
-/*
-int main(){
-    queue new_q;
-    uint32_t x, y;
-    queue_start(&new_q);
-    enqueue(&new_q, 12, 53);
-    enqueue(&new_q, 99, 3);
-    enqueue(&new_q, 13, 33);
-    enqueue(&new_q, 1, 31);
-    enqueue(&new_q, 2, 0);
-    while(dequeue(&new_q, &x, &y)){
-        printf("%u %u\n", x, y);
-    }
-    
-
-    return 0;
-}*/

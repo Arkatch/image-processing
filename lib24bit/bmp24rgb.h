@@ -1,15 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <math.h>
-#include <stdbool.h>
-
-#include "../maxmin.h"
-
 #ifndef __RGB24__
 #define __RGB24__
 
+#include "../maxmin.h"
 #include "rgbtogray.h"
+#include "clustering24bit.h"
+#include "convert.h"
+#include "filter24.h"
 
 #endif

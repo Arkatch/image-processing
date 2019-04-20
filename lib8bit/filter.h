@@ -1,11 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <math.h>
-#include <time.h>
-#include <locale.h>
-
 #include "../maxmin.h"
 
 /*/
@@ -55,7 +47,7 @@ uint8_t max_template(uint8_t *values, uint32_t size){
   return _max;
 }
 uint8_t avg_template(uint8_t *values, uint32_t size){
-  uint32_t avg, i = 0;
+  uint32_t avg = 0, i = 0;
   while( i < size ) { avg += values[i]; ++i; }
   return (uint8_t)(avg/size);
 }
@@ -70,8 +62,7 @@ void image_filter(image_t *img, uint32_t filter_size, uint8_t (*filtr_type)(uint
   uint32_t new_width = img->width - mid;
 
   for (y = mid; y < new_height; ++y) {
-    for (x = mid; x < new_width; ++x) {
-      i = 0;
+    for (x = mid, i = 0; x < new_width; ++x) {
       for (v = -mid; v <= mid; ++v)
         for (z = -mid; z <= mid; ++z)
           values[i++] = img->pixels[(y + v) * (img->width) + x + z];

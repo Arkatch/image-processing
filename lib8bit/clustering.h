@@ -1,12 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <math.h>
-#include <time.h>
-#include <locale.h>
-#include <stdbool.h>
-
 #include "../maxmin.h"
 /*/
   void k_means_clustering(image_t *img, uint32_t k)
@@ -18,17 +9,9 @@
 #ifndef __CLUSTERING__
 #define __CLUSTERING__
 
-typedef struct point_t{
-  int16_t pix;
-  int32_t index, distance;
-  uint32_t pos;
-}point_t;
-
-typedef struct means_t{
-  int16_t pix;
-  uint32_t x, y;
-}means_t;
-
+means_t get_pixel_info(image_t *img, uint32_t x, uint32_t y){
+  return (means_t){ img->pixels[y * img->width + x], x, y };
+}
 
 void k_means_clustering(image_t *img, means_t *k, uint32_t k_size){
   uint32_t x, y, z, j, i;
@@ -42,9 +25,8 @@ void k_means_clustering(image_t *img, means_t *k, uint32_t k_size){
   uint64_t avg_tmp[k_size][2];
 
   //wypełnianie tablicy struktur pikselami i indeksami
-  for(y = 0, i = 0; y < img->height; ++y)
-    for(x = 0; x < img->width; ++x)
-      clusters[i++] = (point_t){img->pixels[y * img->width + x], 0, 256, y * img->width+x}; 
+  for(x = 0, i = 0; x < img->size; ++x)
+    clusters[i++] = (point_t){img->pixels[x], 0, 256, x}; 
 
 
   do{
@@ -52,7 +34,6 @@ void k_means_clustering(image_t *img, means_t *k, uint32_t k_size){
     memcpy(avg_tmp, avg, sizeof(avg));
     //wyszukiwanie najmniejszej odległości dla danego punktu
     for(i = 0; i < img->size; ++i){
-      j = 0;
       for(j = 0; j < k_size; ++j){
         if( abs(clusters[i].pix - k[j].pix) < clusters[i].distance ){
           clusters[i].index = j;
@@ -61,10 +42,8 @@ void k_means_clustering(image_t *img, means_t *k, uint32_t k_size){
       }
     }
     /******zerowanie tablicy wartosci sreniej*****/
-    for(j = 0; j < k_size; ++j) { 
-      avg[j][0] = 0; 
-      avg[j][1] = 0; 
-    }
+    memset(avg, 0, sizeof(uint64_t)*k_size*2);
+
     /****Sumowanie wartości i zliczanie indeksów**/
     for(i = 0; i < img->size; ++i){
       avg[clusters[i].index][0]++;

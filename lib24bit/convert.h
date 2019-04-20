@@ -1,0 +1,98 @@
+#include "../maxmin.h"
+
+#ifndef __CONVERT__
+#define __CONVERT__
+
+//--------------Konwersja z RGB-HSI / HSI-RGB----------------//
+hsi_t rgb_to_hsi(rgb_t rgb){
+  double theta, sqr, h, s, i, r, g, b, _div;
+  _div = (double)(rgb.r + rgb.g + rgb.b);
+  r = rgb.r / _div;
+  g = rgb.g / _div;
+  b = rgb.b / _div;
+
+  //gdy r == g == b to sqr == 0, a przez 0 dzielić nie można
+  sqr = sqrt(pow(r - g, 2) + (r - b)*(g - b));
+  theta = (sqr == 0) ? 0 : acos(0.5*((r - g) + (r - b)) / sqr );
+
+  h = ((b <= g) ? theta : PI2 - theta);
+  s = 1.0 - 3.0 * min(min(r, g), b);
+  i = _div / 765.0; 
+  return (hsi_t){fabs(h), fabs(s), fabs(i)};
+}
+rgb_t hsi_to_rgb(hsi_t hsi){
+  double x = 0, y = 0, z = 0;
+  x = hsi.i * (1 - hsi.s);
+  if( hsi.h < PI2_3 ){ 
+    y = hsi.i * (1 + hsi.s*cos(hsi.h) / cos(PI_3 - hsi.h));
+    z = hsi.i * 3 - x - y;
+    return (rgb_t){ y*255, z*255, x*255 };
+  }
+  else if( hsi.h < PI4_3 ){ 
+    hsi.h -= PI2_3;
+    y = hsi.i * (1 + hsi.s*cos(hsi.h) / cos(PI_3 - hsi.h));
+    z = 3*hsi.i - x - y;
+    return (rgb_t){ x*255, y*255, z*255 };
+  }
+  else{
+    hsi.h -= PI4_3;
+    y = hsi.i * (1 + hsi.s*cos(hsi.h) / cos(PI_3 - hsi.h));
+    z = 3*hsi.i - x - y;
+    return (rgb_t){ z*255, x*255, y*255 };
+  }
+}
+//--------------------------------------------------------//
+
+
+//----------------Przygotowywanie strukur do przechowywania RGB / HSI----------//
+void hsi_img_template(imagehsi_t *dest, image_t *src){
+  if( dest == NULL || src == NULL )
+    { return; }
+  *dest = (imagehsi_t){
+    (uint8_t*)malloc(src->head_size),
+    (double*)malloc(src->size * sizeof(double)),
+    src->head_size, 
+    src->size,
+    src->width,
+    src->height
+  };
+  memcpy(dest->header, src->header, src->head_size);
+  memset(dest->pixels, 0, src->size * sizeof(double)); 
+}
+void rgb_img_template(image_t *dest, imagehsi_t *src){
+  *dest = (image_t){
+    (uint8_t*)malloc(src->head_size),
+    (uint8_t*)malloc(src->size),
+    src->head_size, 
+    src->size,
+    src->width,
+    src->height
+  };
+  memcpy(dest->header, src->header, src->head_size);
+  memset(dest->pixels, 0, src->size); 
+}
+//--------------------------------------------------------//
+
+void convert_to_hsi(imagehsi_t *dest, image_t *src){
+  hsi_img_template(dest, src);
+  hsi_t tmp;
+  for( uint32_t x = 0; x < dest->size; x += 3 ){
+    tmp = rgb_to_hsi((rgb_t){src->pixels[x+2], src->pixels[x+1], src->pixels[x]});
+    memcpy(&dest->pixels[x+2], &tmp.h, sizeof(tmp.h));
+    memcpy(&dest->pixels[x+1], &tmp.s, sizeof(tmp.s));
+    memcpy(&dest->pixels[x+0], &tmp.i, sizeof(tmp.i));
+  }
+}
+
+void convert_to_rgb(image_t *dest, imagehsi_t *src){
+  rgb_img_template(dest, src);
+  rgb_t tmp;
+  for( uint32_t x = 0; x < dest->size; x += 3 ){
+    tmp = hsi_to_rgb((hsi_t){src->pixels[x+2], src->pixels[x+1], src->pixels[x]});
+    memcpy(&dest->pixels[x+2], &tmp.r, sizeof(uint8_t));
+    memcpy(&dest->pixels[x+1], &tmp.g, sizeof(uint8_t));
+    memcpy(&dest->pixels[x+0], &tmp.b, sizeof(uint8_t));
+  }
+}
+
+#endif

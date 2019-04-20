@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <math.h>
-#include <stdbool.h>
-
 #include "../maxmin.h"
 #include "../lib8bit/histogram.h"
 
@@ -18,11 +11,6 @@
 
 #ifndef __RGBGRAY__
 #define __RGBGRAY__
-enum COLOR{
-  BLUE,
-  GREEN, 
-  RED
-};
 
 void convert_gray_mem(image_t *dest, image_t *src){
   /*/Alokacja pamięci na nowy obraz/*/
@@ -41,13 +29,13 @@ void convert_gray_mem(image_t *dest, image_t *src){
   };
   /*/Ustawianie kolorów w tablicy rgb/*/
   for(uint32_t i = 0; i < 256; ++i)
-    { head.rgb[i] = (rgb_t){(uint8_t)i, (uint8_t)i, (uint8_t)i, 0}; }
+    { head.rgb[i] = (rgbquad_t){(uint8_t)i, (uint8_t)i, (uint8_t)i, 0}; }
 
   memcpy(dest->header, &head, sizeof(fullhead_t));
   memset(dest->pixels, 255, dest->size);
 }
 
-
+/***********Konwersja do szarości*************/
 void rgb_to_gray(image_t *img, image_t *new_img){
   uint32_t x, avg, p = 0;
   /*/Przygotowanie pustego pliku/*/
@@ -65,6 +53,7 @@ void gray_by_color(image_t *img, image_t *new_img, enum COLOR color){
     { new_img->pixels[p++] = img->pixels[x + color]; }
   draw_histogram(new_img);
 }
+/********************************************/
 
 /*******Tylko jeden kolor na obrazie********/
 void color_mask(image_t *img, void(*mask)(uint8_t*, uint8_t*, uint8_t*)){

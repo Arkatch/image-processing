@@ -29,6 +29,7 @@
 #define __FUNCTIONS__
 #define max(a, b)(((a) > (b)) ? (a) : (b))
 #define min(a, b)(((a) < (b)) ? (a) : (b))
+#define swap(a,b,type){type c = a; a = b; b = c;}
 #define PI 3.14159265 
 #define PI2 6.283185307   /* 2PI */
 #define PI2_3 2.094395102 /* 2PI/3*/

@@ -32,6 +32,7 @@ void growingregion_queue(image_t *img, int32_t px, int32_t py, int16_t t_min, in
     }
   }
 }
+
 void growingregion(image_t *img, int32_t px, int32_t py, int16_t threshold){
   uint8_t new_pixels[img->size];
   memset(new_pixels, 0, img->size);
@@ -40,5 +41,7 @@ void growingregion(image_t *img, int32_t px, int32_t py, int16_t threshold){
   growingregion_queue(img, px, py, t_min, t_max, new_pixels);
   memmove(img->pixels, new_pixels, img->size);
 }
+
+
 
 #endif

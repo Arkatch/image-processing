@@ -25,9 +25,8 @@ void k_means_clustering(image_t *img, means_t *k, uint32_t k_size){
   uint64_t avg_tmp[k_size][2];
 
   //wypełnianie tablicy struktur pikselami i indeksami
-  for(x = 0, i = 0; x < img->size; ++x)
-    clusters[i++] = (point_t){img->pixels[x], 0, 256, x}; 
-
+  for(x = 0; x < img->size; ++x)
+    { clusters[x] = (point_t){img->pixels[x], 0, 256, x}; }
 
   do{
     //Kopiowanie starych średnich wartości do bufora

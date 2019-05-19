@@ -20,28 +20,42 @@ uint8_t sharpen_template(int *values, int oryginal_value){
   int sharpen_mask[] = { 0, -1, 0, -1, 5, -1, 0, -1, 0 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
-    bit_value += values[i]*sharpen_mask[i];
-  if( bit_value < 0 || bit_value > 255 )
-    return oryginal_value;
-  return bit_value;
+    { bit_value += values[i]*sharpen_mask[i]; }
+  return (bit_value < 0 || bit_value > 255) ? oryginal_value : bit_value;
 }
-uint8_t boxblur_template(int *values, int oryginal_value){
-  int boxblur_mask[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+uint8_t hiboost_template(int *values, int oryginal_value){
+  int sharpen_mask[] = { -1, -1, -1, -1, 8, -1, -1, -1, -1 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
-    bit_value += values[i]*boxblur_mask[i];
-  if( bit_value == 0 )
-    return oryginal_value;
-  return bit_value/9;
+    { bit_value += values[i]*sharpen_mask[i]; }
+  return (bit_value < 0 || bit_value > 255) ? oryginal_value : bit_value;
+}
+
+//cells counting
+uint8_t dilation_template(int *values, int oryginal_value){
+  int sharpen_mask[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  int bit_value = 0, i;
+  for(i = 0; i < 9; ++i)
+    { bit_value += values[i]*sharpen_mask[i]; }
+  return (bit_value >= 255) ? 255 : 0;
+}
+/////////////////
+
+
+uint8_t boxblur_template(int *values, int oryginal_value){
+  int boxblur_mask[] = { 1, 0, 1, 1, 1, 1, 1, 0, 1 };
+  int bit_value = 0, i;
+  for(i = 0; i < 9; ++i)
+    { bit_value += values[i]*boxblur_mask[i]; }
+  return ( bit_value ) ? bit_value/9 : oryginal_value;
 }
 uint8_t gaussianblur_template(int *values, int oryginal_value){
   int gaussianblur_mask[] = { 1, 2, 1, 2, 4, 2, 1, 2, 1 };
   int bit_value = 0, i;
   for(i = 0; i < 9; ++i)
-    bit_value += values[i]*gaussianblur_mask[i];
-  if( bit_value == 0 )
-    return oryginal_value;
-  return bit_value/16;
+    { bit_value += values[i]*gaussianblur_mask[i]; }
+  return ( bit_value ) ? bit_value/16 : oryginal_value;
 }
 void convolution_matrix(image_t *img, uint8_t (*mask_type)(int*, int)){
   uint8_t new_pixels[img->size];

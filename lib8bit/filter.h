@@ -24,11 +24,9 @@
 #define __FILTER__
 
 void add_salt(image_t *img, uint8_t proc) {
-  uint32_t x, y;
-  for (y = 0; y < img->height; ++y)
-    for (x = 0; x < img->width; ++x)
-      if ((uint8_t) rand() % 101 < proc)
-        img->pixels[y * img->width + x] = (rand() % 2) ? 0 : 255;
+  for (uint32_t  x = 0; x < img->size; ++x)
+    if ((uint8_t) rand() % 101 < proc)
+      { img->pixels[x] = (rand() % 2) ? 0 : 255; }
 }
 uint8_t median_template(uint8_t *values, uint32_t size){
   qsort(values, size, sizeof(uint8_t), comp);

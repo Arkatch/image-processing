@@ -16,23 +16,23 @@ void convert_gray_mem(image_t *dest, image_t *src){
   /*/Alokacja pamięci na nowy obraz/*/
   *dest = (image_t){
     (uint8_t*)malloc(src->head_size+1024),
-    (uint8_t*)malloc(src->size / 3),
+    (uint8_t*)malloc(src->width * src->height),
     src->head_size+1024, 
-    src->size / 3,
+    src->width * src->height,
     src->width,
     src->height
   };
   /*/Tworzenie nowego nagłówka/*/
   fullhead_t head = {
-    (infomin_t){ 0x4D42, src->size/3+1078, 0, 0, 1078 },
-    (header_t){ 40, src->width, src->height, 1, 8, 0, src->size/3, 0, 0, 256, 0 }
+    (infomin_t){ 0x4D42, dest->size+dest->head_size, 0, 0, 1078 },
+    (header_t){ 40, src->width, src->height, 1, 8, 0, dest->size, 0, 0, 256, 0 }
   };
   /*/Ustawianie kolorów w tablicy rgb/*/
   for(uint32_t i = 0; i < 256; ++i)
     { head.rgb[i] = (rgbquad_t){(uint8_t)i, (uint8_t)i, (uint8_t)i, 0}; }
 
   memcpy(dest->header, &head, sizeof(fullhead_t));
-  memset(dest->pixels, 255, dest->size);
+  memset(dest->pixels, 150, dest->size);
 }
 
 /***********Konwersja do szarości*************/

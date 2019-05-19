@@ -73,6 +73,7 @@ void rgb_img_template(image_t *dest, imagehsi_t *src){
 }
 //--------------------------------------------------------//
 
+//--------------Konwersja obrazów-------------------------//
 void convert_to_hsi(imagehsi_t *dest, image_t *src){
   hsi_img_template(dest, src);
   hsi_t tmp;
@@ -95,6 +96,28 @@ void convert_to_rgb(image_t *dest, imagehsi_t *src){
   }
 }
 
+void gray_to_rgb(image_t *dest, image_t *src){
+  *dest = (image_t){
+    (uint8_t*)malloc(54),
+    (uint8_t*)malloc(src->size*3),
+    54,
+    src->size * 3,
+    src->width,
+    src->height
+  };
+  infomin_t bbb = { 0x4D42, dest->size+54, 0, 0, 54 };
+  header_t aaa = { 40, dest->width, dest->height, 1, 24, 0, dest->size, 0, 0, 256, 0 };
+
+  memcpy(dest->header, &bbb, 14);
+  memcpy(dest->header+14, &aaa, 40);
+
+  for(int i = 0, j = 0; i < dest->size; i+=3, ++j){
+    dest->pixels[i+2] = src->pixels[j];
+    dest->pixels[i+1] = src->pixels[j];
+    dest->pixels[i+0] = src->pixels[j];
+  }
+}
+//--------------------------------------------------------//
 
 //---------------Zapisywanie i kopiowanie HSI-----------------//
 void save_hsi(imagehsi_t *hsi, FILE *bmp, bool clear_mem){

@@ -10,13 +10,83 @@
 #include "maxmin.h"
 #include "lib8bit/bmp8gray.h"
 #include "lib24bit/bmp24rgb.h"
+#include "cells_counting.h"
 
+int cmp(const void *a, const void *b){
+  return *(int*)a - *(int*)b;
+}
 
 int main() {
   srand(time(NULL));
   setlocale(LC_ALL, "pl_PL.utf8");
 
-  //------------------------//
+  /*/-----------------------------------------//
+  image_t img, gray, rgb;
+  
+  FILE *file = fopen("1.bmp","rb");
+  if( file == NULL )
+    return 1;
+  
+  //Wczytanie obrazu i konwersja obrazu do 8bit
+  load_img(&img, file);
+  rgb_to_gray(&img, &gray);
+
+  //Wyznaczanie krawędzi, kolorowanie i wyznaczanie statystyki
+  statistic_t *arr = separate_cells(&gray, &rgb, 17); //<- 17 - rozmiar wielkości filtra bersena
+
+  //Zapisywanie obrazu 8bit
+  file = fopen("gray.bmp", "wb");
+  save_img(&gray, file, true);
+
+  //Zapisywanie obrazu pokolorowanego
+  file = fopen("rgb.bmp", "wb");
+  save_img(&rgb, file, true);
+
+  //Sortowanie i zapisywanie statystyk
+  file = fopen("stat.txt", "wb");
+  sort_stat(arr);
+  save_stat(arr, file);
+
+  //-----------------------------------------/*/
+
+  // for(int i = 1; i <= 15; ++i){
+  //   if(i==2) continue;
+  //   char filename[30];
+  //   sprintf(filename, "impr/%d_c.bmp", i);
+  //   FILE *f = fopen(filename, "rb");
+
+  //   image_t img, color, gray; 
+  //   load_img(&img, f);
+  //   rgb_to_gray(&img, &gray);
+
+  //   //---------------------START--------------------//
+  //   time_t c = clock(); 
+  //   printf("Start...\n");
+
+  //   statistic_t *tmp = separate_cells(&gray, &color, 17);
+  //   sprintf(filename, "impr/gen/%d_stat.txt", i);
+  //   f = fopen(filename, "wb");
+  //   fprintf(f, "Zblizona liczba: %d\n", tmp->size);
+
+  //   sort_stat(tmp);
+  //   for(int j = 0; j < tmp->size; ++j)
+  //     fprintf(f, "%d. Liczba pikseli: %d, RGB(%d, %d, %d)\n", j+1, tmp->values[j], tmp->color[j].r, tmp->color[j].g, tmp->color[j].b);
+  //   free(tmp);
+
+  //   c = clock() - c;
+  //   printf("End: %ld Second: %.2f\n", c, (float)c/CLOCKS_PER_SEC); 
+  //   //-----------------------END--------------------//
+    
+  //   sprintf(filename, "impr/gen/%d_gray.bmp", i);
+  //   f = fopen(filename, "wb");
+  //   save_img(&gray, f, true);
+
+  //   sprintf(filename, "impr/gen/%d_color.bmp", i);
+  //   f = fopen(filename, "wb");
+  //   save_img(&color, f, true);
+  // }
+
+  /*/------------------------//
   char strrgb[50] = {0};
   char strgray[50] = {0};
   printf("Podaj nazwę pliku RGB: ");
@@ -33,14 +103,14 @@ int main() {
     printf("Nie można otworzyć/utworzyć plików, lub plik o danej nazwie nie istnieje!");
     return 1;
   }
-  //------------------------/*/
+  //------------------------//
 
   //--------Deklaracje-------//
   FILE *file;
   imagehsi_t hsi, hsi_corrupt, hsi_edit;
   image_t img, img_edit, new_img, corupt;
   load_img(&img, bmp);
-  //------------------------/*/
+  //------------------------//
 
   //-------Informacje o pliku--------//
   printf("Informacje o pliku RGB:\n");
@@ -49,7 +119,7 @@ int main() {
   printf("|----------------------------|\n");
   //---------------------------------/*/
 
-  //-----------------------HSI 24 bit BMP---------------------------//
+  /*/-----------------------HSI 24 bit BMP---------------------------//
   //---------Szum RGB(HSI)---------------//
   file = fopen("gen24/corrupt.bmp", "wb");  
   convert_to_hsi(&hsi, &img);   //#####przejście w tryb HSI#####
@@ -109,7 +179,7 @@ int main() {
   //-------------------------------------//
   //----------------------------------------------------------------/*/
 
-  //-----------------------RGB 24 bit BMP---------------------------//
+  /*/-----------------------RGB 24 bit BMP---------------------------//
   //------Algorytm centroidów RGB--------//
   file = fopen("gen24/clust.bmp", "wb");
   copy_img(&img_edit, &img);
@@ -174,7 +244,7 @@ int main() {
   //-------------------------------------//
   //----------------------------------------------------------------/*/
 
-  //-----------------------GRAY 8 bit BMP---------------------------//
+  /*/-----------------------GRAY 8 bit BMP---------------------------//
   //------Otwieranie pliku 8 bitowego---------//
   free_img(&img);
   load_img(&img, bmp_gray);
@@ -185,7 +255,7 @@ int main() {
   printf("Rozmiar: %u bajtów\nWymiary: %ux%u px\nOffbits: %u\n ",
     img.size, img.width, img.height, img.head_size);
   printf("|----------------------------|\n");
-  //---------------------------------/*/
+  //---------------------------------//
 
   //------Algorytm centroidów--------//
   copy_img(&img_edit, &img);
@@ -314,7 +384,7 @@ int main() {
   //----------------------------------------------------------------/*/
 
   //--Zamykanie plików i zwalnianie pamięci---//
-  free_img(&img);
+  //free_img(&img);
   //---------------------------------/*/
   return 0;
 }

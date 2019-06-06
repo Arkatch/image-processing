@@ -6,7 +6,6 @@
 #include <time.h>
 #include <locale.h>
 #include <stdbool.h>
-
 /*/
   struktura ### image_t ###
   #struktura zawiera wszystkie informacje o pliku
@@ -30,6 +29,7 @@
 #define max(a, b)(((a) > (b)) ? (a) : (b))
 #define min(a, b)(((a) < (b)) ? (a) : (b))
 #define swap(a,b,type){type c = a; a = b; b = c;}
+#define pow2(a)((a)*(a))
 #define PI 3.14159265 
 #define PI2 6.283185307   /* 2PI */
 #define PI2_3 2.094395102 /* 2PI/3*/
@@ -132,10 +132,16 @@ typedef struct means_t{
 //-------------------------------//
 
 //----------------------------------------------------Funkcje-----------------------------------------------------//
-//qsort
+//qsort {
 int comp(const void * a, const void * b) {
   return (int16_t)(*(uint8_t*)a) - (int16_t)(*(uint8_t*)b);
 }
+int compar_16(const void *a, const void *b){
+  int16_t _a = *(int16_t*)a, _b = *(int16_t*)b;
+  if( _a == _b ) return 0;
+  return _a > _b;
+}
+//qsort }
 
 uint64_t file_size(FILE *file){
   if( file == NULL )
@@ -242,3 +248,4 @@ void merge_pixels24(imagehsi_t *img, uint32_t mid, double *new_pixels, uint32_t 
 }
 //-------------------------------------------------------------//
 #endif
+

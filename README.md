@@ -1,4 +1,4 @@
-#Image processing  
+Image processing  
 Implementation popular image processing methods in C.  
 Support 8-bit grayscale, 24-bit rgb .bmp file and 3D 8/16-bit .raw images with .mhd files.  
 

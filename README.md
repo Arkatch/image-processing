@@ -1,6 +1,6 @@
 #Image processing  
 Implementation popular image processing methods in C.  
-Support 8-bit grayscale and 24-bit rgb .bmp file.  
+Support 8-bit grayscale, 24-bit rgb .bmp file and 3D 8/16-bit .raw images with .mhd files.  
 
 Method for 8-bit grayscale image:  
 -Salt and pepper  
@@ -22,3 +22,9 @@ Method for 24-bit color image:
 -Convert to gray 
 -Convert to gray by color  
 -Only one color in image  
+
+Method for 3D .raw images
+-Median, Min, Max, Avg 3D/2D filters with custom size (16-bit)  
+-3D Growing regionraw segmentation (8/16-bit)  
+-3D skeletonization and thickening (8-bit)  
+

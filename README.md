@@ -23,7 +23,7 @@ Method for 24-bit color image:
 -Convert to gray by color  
 -Only one color in image  
 
-Method for 3D .raw images
+Method for 3D .raw images  
 -Median, Min, Max, Avg 3D/2D filters with custom size (16-bit)  
 -3D Growing regionraw segmentation (8/16-bit)  
 -3D skeletonization and thickening (8-bit)  

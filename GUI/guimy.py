@@ -9,6 +9,15 @@ import tkinter.filedialog as fdialog
 from PIL import Image, ImageTk
 
 runtype = ""
+
+#tworzenie pliku tymczasowego
+tempbmpfilepath = "__temp__.bmp"
+open(tempbmpfilepath, "wb")
+
+#ustawianie ścieżki wiersza poleceń na lokalizacje pliku *.py
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+#na systemach linux trzeba wykonywać program za pomocą "./filename argv"
 if platform.system() == "Linux": runtype = "./"
   
 #okno pierwszego i drugiego obrazu`
@@ -152,12 +161,12 @@ class Window(tk.Frame):
       self.status(2)
       return
     code = ""
-    if operation == 0: code = "%sline color_mask red_mask %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 1: code = "%sline color_mask green_mask %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 2: code = "%sline color_mask blue_mask %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 3: code = "%sline convert rgb_to_gray %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
+    if operation == 0: code = "%sline color_mask red_mask %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 1: code = "%sline color_mask green_mask %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 2: code = "%sline color_mask blue_mask %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 3: code = "%sline convert rgb_to_gray %s %s" % (runtype, main_filename, tempbmpfilepath)
     if operation == 4 or operation == 5 or operation == 6:
-      code = "%sline convert gray_by_color %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), operation - 4)
+      code = "%sline convert gray_by_color %s %s %d" % (runtype, main_filename, tempbmpfilepath, operation - 4)
     run_command(code, self)
     self.status(0)
   def clustering(self, operation):
@@ -171,8 +180,8 @@ class Window(tk.Frame):
       self.status(6)
       return
     code = ""
-    if operation == 0: code = "%sline clustering24 clustering24 %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 1: code = "%sline clustering clustering %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
+    if operation == 0: code = "%sline clustering24 clustering24 %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 1: code = "%sline clustering clustering %s %s" % (runtype, main_filename, tempbmpfilepath)
     for i in range(0, len(points), 2):
       x, y = points[i], points[i+1]
       if x < 0 or x >= main_header.width or y < 0 or y >= main_header.height:
@@ -188,7 +197,7 @@ class Window(tk.Frame):
     if len(cor) != 2 or cor[0] < 0 or cor[1] < 0 or cor[0] >= main_header.width or cor[1] >= main_header.height:
       self.status(6)
       return
-    code="%sline growingregion growingregion %s %s %d %d %d"%(runtype, main_filename, os.path.abspath("aaa.bmp"), cor[0], cor[1], treshold)
+    code="%sline growingregion growingregion %s %s %d %d %d"%(runtype, main_filename, tempbmpfilepath, cor[0], cor[1], treshold)
     run_command(code, self)
     self.status(0)
   def show_info(self, header):
@@ -268,10 +277,10 @@ class Window(tk.Frame):
       self.status(5)
       return
     code = ""
-    if operation == 0: code = "%sline image_filter min_template %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 1: code = "%sline image_filter median_template %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 2: code = "%sline image_filter max_template %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 3: code = "%sline other add_salt %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
+    if operation == 0: code = "%sline image_filter min_template %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 1: code = "%sline image_filter median_template %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 2: code = "%sline image_filter max_template %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 3: code = "%sline other add_salt %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
     run_command(code, self)
     self.status(0) 
   def filtrs(self, operation):
@@ -279,17 +288,17 @@ class Window(tk.Frame):
       self.status(2)
       return
     code = ""
-    if operation == 0: code = "%sline convolution_matrix sharpen_template %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 1: code = "%sline convolution_matrix boxblur_template %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 2: code = "%sline convolution_matrix gaussianblur_template %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 3: code = "%sline other image_negative %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 4: code = "%sline other contrast_stretch %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 5: code = "%sline edge_detection prewitt_template %s %s""" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 6: code = "%sline edge_detection sobel_template %s %s""" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 7: code = "%sline edge_detection laplacian_template %s %s""" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 8: code = "%sline morphology thinning %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), 0)
-    if operation == 9: code = "%sline morphology pruning %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), 0)
-    if operation == 10: code = "%sline convolution_matrix dilation_template %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
+    if operation == 0: code = "%sline convolution_matrix sharpen_template %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 1: code = "%sline convolution_matrix boxblur_template %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 2: code = "%sline convolution_matrix gaussianblur_template %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 3: code = "%sline other image_negative %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 4: code = "%sline other contrast_stretch %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 5: code = "%sline edge_detection prewitt_template %s %s""" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 6: code = "%sline edge_detection sobel_template %s %s""" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 7: code = "%sline edge_detection laplacian_template %s %s""" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 8: code = "%sline morphology thinning %s %s %d" % (runtype, main_filename, tempbmpfilepath, 0)
+    if operation == 9: code = "%sline morphology pruning %s %s %d" % (runtype, main_filename, tempbmpfilepath, 0)
+    if operation == 10: code = "%sline convolution_matrix dilation_template %s %s" % (runtype, main_filename, tempbmpfilepath)
     run_command(code, self)
     self.status(0)
   def binaryzation(self, operation):
@@ -301,11 +310,11 @@ class Window(tk.Frame):
     elif (operation == 3 or operation == 4) and (size < 3 or size % 2 == 0):
       self.status(4)
       return
-    if operation == 0: code = "%sline binarization binarization %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 1: code = "%sline binarization otsumethod %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 2: code = "%sline binarization binarizationmedian %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
-    if operation == 3: code = "%sline binarization bernsenmethod %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 4: code = "%sline binarization bernsenmethodmedian %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
+    if operation == 0: code = "%sline binarization binarization %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 1: code = "%sline binarization otsumethod %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 2: code = "%sline binarization binarizationmedian %s %s" % (runtype, main_filename, tempbmpfilepath)
+    if operation == 3: code = "%sline binarization bernsenmethod %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 4: code = "%sline binarization bernsenmethodmedian %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
     run_command(code, self)
     self.status(0)
   def load_bmp_info(self, filename):
@@ -335,7 +344,7 @@ class Window(tk.Frame):
       return
     code = ""
     if operation == 0:
-      code = "%sline edge_detection24 sobel_template %s %s" % (runtype, main_filename, os.path.abspath("aaa.bmp"))
+      code = "%sline edge_detection24 sobel_template %s %s" % (runtype, main_filename, tempbmpfilepath)
     run_command(code, self)
   def filtr_minmaxmedian24(self, operation):
     if main_filename == "":
@@ -349,17 +358,17 @@ class Window(tk.Frame):
       self.status(5)
       return
     code = ""
-    if operation == 0: code = "%sline image_filter24 min_template24 %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 1: code = "%sline image_filter24 median_template24 %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 2: code = "%sline image_filter24 max_template24 %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 3: code = "%sline image_filter24 avg_template24 %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
-    if operation == 4: code = "%sline other24 add_salt24 %s %s %d" % (runtype, main_filename, os.path.abspath("aaa.bmp"), size)
+    if operation == 0: code = "%sline image_filter24 min_template24 %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 1: code = "%sline image_filter24 median_template24 %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 2: code = "%sline image_filter24 max_template24 %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 3: code = "%sline image_filter24 avg_template24 %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
+    if operation == 4: code = "%sline other24 add_salt24 %s %s %d" % (runtype, main_filename, tempbmpfilepath, size)
     run_command(code, self)
     self.status(0) 
 
 def run_command(action, window):
   os.system(action)
-  path = os.path.abspath("aaa.bmp")
+  path = tempbmpfilepath
   window.draw_image(path)
 
 app = Window(master=root)

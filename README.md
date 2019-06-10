@@ -1,6 +1,8 @@
 Image processing  
-Implementation popular image processing methods in C.  
+Implementation popular image processing methods in C with GUI in Python.  
 Support 8-bit grayscale, 24-bit rgb .bmp file and 3D 8/16-bit .raw images with .mhd files.  
+
+Python GUI support PL language.  
 
 Method for 8-bit grayscale image:  
 -Salt and pepper  
